@@ -36,7 +36,7 @@ jobs:
           -sdk iphoneos \
           CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos"
 
-    - name: Create IPA Payload (Plus PlugIns Fix)
+    - name: Create IPA Payload
       run: |
         mkdir -p Payload/FlashboardApp.app/PlugIns
         cp -R build/Release-iphoneos/FlashboardApp.app/ Payload/FlashboardApp.app/

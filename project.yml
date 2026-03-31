@@ -14,9 +14,9 @@ targets:
     info:
       path: FlashboardApp/Info.plist
       properties:
-        CFBundleIcons: 
-          CFBundlePrimaryIcon: 
-            CFBundleIconFiles: 
+        CFBundleIcons:
+          CFBundlePrimaryIcon:
+            CFBundleIconFiles:
               - AppIcon
         UILaunchStoryboardName: LaunchScreen
         UIApplicationSceneManifest:
