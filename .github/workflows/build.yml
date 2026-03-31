@@ -1,4 +1,4 @@
-name: Build iOS IPA
+﻿name: Build iOS IPA
 
 on:
   push:
@@ -23,7 +23,9 @@ jobs:
         echo "CODE_SIGNING_ALLOWED = NO" > no-sign.xcconfig
         echo "CODE_SIGNING_REQUIRED = NO" >> no-sign.xcconfig
         echo "CODE_SIGN_IDENTITY = " >> no-sign.xcconfig
-        echo "BITCODE_GENERATION_MODE = bitcode" >> no-sign.xcconfig
+
+    - name: Show Swift Files Found
+      run: find . -name "*.swift" -not -path "./.git/*"
 
     - name: Build App and Extension
       run: |
