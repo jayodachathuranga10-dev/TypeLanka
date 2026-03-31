@@ -43,6 +43,7 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
                 customKeyboardView.displaySuggestions(replies)
                 return
             }
+
         }
     }
     
