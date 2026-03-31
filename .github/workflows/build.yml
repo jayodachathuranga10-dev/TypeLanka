@@ -18,12 +18,12 @@ jobs:
     - name: Generate Xcode Project
       run: xcodegen generate
 
-    - name: Create No-Sign Configuration
+    - name: Create Ad-Hoc Sign Configuration
       run: |
-        echo "CODE_SIGNING_ALLOWED = NO" > no-sign.xcconfig
-        echo "CODE_SIGNING_REQUIRED = NO" >> no-sign.xcconfig
-        echo "CODE_SIGN_IDENTITY = " >> no-sign.xcconfig
-        echo "ENABLE_BITCODE = NO" >> no-sign.xcconfig
+        echo "CODE_SIGNING_ALLOWED = YES" > ad-hoc.xcconfig
+        echo "CODE_SIGNING_REQUIRED = YES" >> ad-hoc.xcconfig
+        echo "CODE_SIGN_IDENTITY = -" >> ad-hoc.xcconfig
+        echo "ENABLE_BITCODE = NO" >> ad-hoc.xcconfig
 
     - name: Build App and Extension
       run: |
@@ -32,7 +32,7 @@ jobs:
           -scheme FlashboardApp \
           -configuration Release \
           -destination 'generic/platform=iOS' \
-          -xcconfig no-sign.xcconfig \
+          -xcconfig ad-hoc.xcconfig \
           -sdk iphoneos \
           CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos" \
           2>&1 | tee build_log.txt
