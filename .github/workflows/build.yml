@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15 # <--- THE MAGIC FIX
+    runs-on: macos-15
 
     steps:
     - uses: actions/checkout@v4
@@ -36,10 +36,18 @@ jobs:
           -sdk iphoneos \
           CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos"
 
-    - name: Create IPA Payload
+    - name: Create IPA Payload (Plus PlugIns Fix)
       run: |
-        mkdir -p Payload
-        cp -R build/Release-iphoneos/TypeLankaApp.app Payload/
+        # 1. Create the standard iOS App folder structure
+        mkdir -p Payload/TypeLankaApp.app/PlugIns
+        
+        # 2. Copy the main App into Payload
+        cp -R build/Release-iphoneos/TypeLankaApp.app/ Payload/TypeLankaApp.app/
+        
+        # 3. Copy the Keyboard Extension into the secret PlugIns folder
+        cp -R build/Release-iphoneos/TypeLankaKeyboard.appex/ Payload/TypeLankaApp.app/PlugIns/
+        
+        # 4. Zip it all up into an IPA
         zip -r TypeLankaKeyboard.ipa Payload
 
     - name: Upload IPA Artifact
