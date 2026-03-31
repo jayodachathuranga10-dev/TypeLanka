@@ -46,20 +46,20 @@ class KeyboardView: UIView {
         let langBtn = UIButton(type: .system)
         langBtn.setTitle("SI", for: .normal)
         langBtn.titleLabel?.font = .boldSystemFont(ofSize: 14)
-        langBtn.backgroundColor = ThemeManager.shared.currentTheme.specialKeyColor
+        langBtn.backgroundColor = ThemeManager.shared.activeTheme.specialKeyColor
         langBtn.setTitleColor(.white, for: .normal)
         langBtn.layer.cornerRadius = 18
         
         let emojiBtn = UIButton(type: .system)
         emojiBtn.setTitle("😀", for: .normal)
         emojiBtn.layer.cornerRadius = 18
-        emojiBtn.backgroundColor = ThemeManager.shared.currentTheme.specialKeyColor
+        emojiBtn.backgroundColor = ThemeManager.shared.activeTheme.specialKeyColor
         
         let fontBtn = UIButton(type: .system)
         fontBtn.setTitle("Aa", for: .normal)
         fontBtn.setTitleColor(.white, for: .normal)
         fontBtn.layer.cornerRadius = 18
-        fontBtn.backgroundColor = ThemeManager.shared.currentTheme.specialKeyColor
+        fontBtn.backgroundColor = ThemeManager.shared.activeTheme.specialKeyColor
         
         let settingBtn = UIButton(type: .system)
         settingBtn.setImage(UIImage(systemName: "gearshape.fill"), for: .normal)
@@ -296,7 +296,7 @@ class KeyboardView: UIView {
         for word in words {
             let btn = UIButton(type: .system)
             btn.setTitle(word, for: .normal)
-            btn.setTitleColor(ThemeManager.shared.currentTheme.keyTextColor, for: .normal)
+            btn.setTitleColor(ThemeManager.shared.activeTheme.keyTextColor, for: .normal)
             btn.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
             suggestionBar.addArrangedSubview(btn)
         }
