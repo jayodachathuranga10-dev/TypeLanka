@@ -28,8 +28,8 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
             customKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        self.textDocumentProxy.keyboardType = .default
         updateSuggestions()
+
     }
     
     override func textDidChange(_ textInput: UITextInput?) {
