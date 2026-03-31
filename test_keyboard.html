@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TypeLanka Keyboard Simulator</title>
+<style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 20px; }
+    
+    .device-screen { background-color: white; border-radius: 20px 20px 0 0; border: 8px solid #111; border-bottom: none; height: 300px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
+    .chat-header { font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; text-align: center; color: #333; }
+    .input-area { margin-top: auto; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; min-height: 24px; font-size: 16px; display: flex; align-items: center; background: #fff; }
+    .input-text { flex: 1; outline: none; white-space: pre-wrap; word-wrap: break-word; }
+    .input-text:empty:before { content: 'Message...'; color: #999; }
+    
+    /* TypeLanka Premium Keyboard UI */
+    .keyboard-container { 
+        background: linear-gradient(180deg, #18181a 0%, #0a0a0c 100%); 
+        padding: 5px 6px 30px 6px; 
+        display: flex; flex-direction: column; gap: 10px; user-select: none; position: relative; height: 260px; overflow: hidden; 
+    }
+    
+    /* Toolbar */
+    .top-toolbar {
+        display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; height: 40px;
+    }
+    
+    .tool-btn {
+        width: 36px; height: 36px; border-radius: 18px; border: none; background: #2a2a2c;
+        color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: 0.1s background;
+    }
+    .tool-btn:active { background: #3a3a3c; }
+    .tool-btn.lang { font-size: 13px; font-weight: bold; }
+    .tool-btn.active-feature { background: #007aff; }
+
+    /* Suggestions CSS */
+    .suggestion-item { flex: 1; text-align: center; color: #ccc; font-size: 16px; padding: 10px 0; cursor: pointer; background: transparent; border-radius: 8px; transition: 0.1s; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }
+    .suggestion-item:active { background: #333; }
+
+    /* Key Rows */
+    .keyboard-keys { display: flex; flex-direction: column; gap: 10px; height: 100%; margin-top: 5px; }
+    .keyboard-row { display: flex; justify-content: center; gap: 6px; }
+    
+    /* Individual Premium Keys */
+    .key { 
+        flex: 1; height: 46px; border-radius: 6px; border: none; position: relative;
+        background: #232325; color: #fff; font-size: 24px; font-weight: 400; cursor: pointer;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+        display: flex; align-items: center; justify-content: center; font-family: -apple-system, sans-serif; padding: 0;
+        transition: transform 0.05s, background 0.05s;
+    }
+    .key:active { background: #3a3a3c; transform: translateY(1px); box-shadow: 0 0 0 rgba(0,0,0,0.6); }
+    
+    .key-subhint {
+        position: absolute; top: 3px; right: 4px; font-size: 10px; color: #777; font-weight: 500;
+    }
+
+    .key-special { background: #151516; font-size: 16px; flex: 1.5; color: #ccc; }
+    .key-space { flex: 4; font-size: 16px; font-weight: 500; color: #ccc; letter-spacing: 0.5px; }
+    .key-return { flex: 1.5; background: #007aff; color: white; font-size: 16px; font-weight: bold; box-shadow: 0 1px 0 rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2); }
+    
+    .uppercase .key:not(.key-special):not(.key-space):not(.key-return) { text-transform: uppercase; }
+
+    /* Clipboard Overlay */
+    .clipboard-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #111112; z-index: 10; display: none; flex-direction: column; }
+    .clip-header { display: flex; align-items: center; padding: 10px 12px; background: #1a1a1c; border-bottom: 1px solid #222; flex-shrink: 0; }
+    .clip-back { background: transparent; color: #007aff; border: none; font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 15px; padding: 0; }
+    .clip-title { font-size: 17px; font-weight: 600; flex: 1; color: white; letter-spacing: 0.5px; }
+    .clip-clear-btn { background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .clip-clear-btn:active { background: #444; }
+
+    .clip-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    .section-title { color: #888; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0px; margin-top: 5px; flex-shrink: 0; }
+
+    .clip-item-card { background: #1f1f21; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #2a2a2c; flex-shrink: 0; }
+    .clip-item-card:active { background: #252527; }
+    .clip-item-text { padding: 12px 14px; font-size: 14px; color: #e0e0e0; cursor: pointer; line-height: 1.4; word-break: break-word; flex-shrink: 0; }
+    .clip-item-actions { display: flex; justify-content: space-between; padding: 6px 14px; background: #1a1a1c; border-top: 1px solid #252527; flex-shrink: 0; }
+    .action-group { display: flex; gap: 12px; }
+    .action-btn { background: transparent; border: none; color: #888; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 0; }
+    .action-btn span { font-size: 12px; font-weight: 500; }
+    .action-btn.pin.active { color: #ffd60a; }
+    .action-btn.delete { color: #ff453a; }
+    .action-btn.paste { color: #0a84ff; }
+
+    .clip-empty { text-align: center; color: #666; margin-top: 50px; display: flex; flex-direction: column; align-items: center; }
+    .clip-empty-icon { font-size: 30px; margin-bottom: 10px; opacity: 0.5; }
+
+    /* Settings / Tools Overlay (Premium Android/Gboard Aesthetic) */
+    .settings-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, #18181A 0%, #050505 100%); z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    .settings-header { display: flex; align-items: center; justify-content: flex-end; padding: 15px 15px 5px 15px; flex-shrink: 0; border: none; background: transparent; }
+    .settings-back { background: rgba(255,255,255,0.1); color: #fff; border: none; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; transition: 0.2s; }
+    .settings-back:active { background: rgba(255,255,255,0.2); transform: scale(0.95); }
+    
+    .settings-tools-area { flex: 1; overflow-y: auto; padding: 5px 15px 25px 15px; display: flex; flex-direction: column; }
+    
+    .customize-hint { color: #888; font-size: 11px; text-align: center; margin-bottom: 12px; font-weight: 500; }
+    .customize-bar { display: flex; justify-content: center; gap: 8px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1); margin-bottom: 25px; }
+    .tool-drag-circle { width: 36px; height: 36px; border-radius: 50%; background: #2a2a2c; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; cursor: grab; opacity: 0.8; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); }
+    
+    .tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px 10px; }
+    .tool-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: 0.1s; }
+    .tool-icon-btn { width: 50px; height: 50px; border-radius: 50%; background: #1f1f21; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05); transition: 0.2s; border: 1px solid rgba(255,255,255,0.03); }
+    .tool-item:active .tool-icon-btn { transform: scale(0.9); background: #2a2a2c; }
+    .tool-label { color: #ccc; font-size: 11px; font-weight: 500; text-align: center; font-family: -apple-system, system-ui, sans-serif; }
+    
+    /* Advanced Emoji Overlay */
+    .emoji-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #212123; z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    
+    .emoji-search-bar { padding: 10px 12px; background: #212123; border-bottom: 1px solid #2d2d30; flex-shrink: 0; position: relative; }
+    .emoji-search-icon { position: absolute; left: 22px; top: 18px; color: #888; font-size: 14px; }
+    .emoji-search-input { width: 100%; background: #333336; border: none; border-radius: 10px; padding: 8px 10px 8px 32px; color: white; font-size: 15px; outline: none; box-sizing: border-box; }
+    .emoji-search-input::placeholder { color: #888; }
+    
+    .emoji-scroll-area { flex: 1; overflow-y: auto; padding: 10px 15px; }
+    .emoji-category-title { color: #888; font-size: 13px; font-weight: bold; margin-bottom: 8px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 15px; align-content: start; }
+    .emoji-btn { background: transparent; border: none; font-size: 28px; cursor: pointer; transition: transform 0.1s; padding: 4px 0; display: flex; justify-content: center; }
+    .emoji-btn:active { transform: scale(1.3); }
+    
+    .emoji-bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 25px 10px; background: #2a2a2d; border-top: 1px solid #38383b; flex-shrink: 0; }
+    .emoji-nav-btn { background: transparent; border: none; color: #999; font-size: 18px; cursor: pointer; padding: 6px 8px; border-radius: 10px; transition: 0.2s; }
+    .emoji-nav-btn.active { background: #3d3d40; color: white; }
+    .emoji-nav-text { font-size: 14px; font-weight: bold; color: white; }
+    
+    /* Font Overlay (Premium Grid Design) */
+    .font-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #1a1a1c; z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    .font-header { display: flex; align-items: center; padding: 12px 15px; background: #222225; border-bottom: 1px solid #333; flex-shrink: 0; }
+    .font-back { background: transparent; color: #fff; border: none; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 15px; padding: 0; }
+    .font-title { font-size: 18px; font-weight: 600; flex: 1; color: white; letter-spacing: 0.5px; }
+    
+    .font-scroll-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .font-section-title { color: #888; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    
+    .font-default-btn { background: #ff3b30; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.1s; letter-spacing: 1px; width: max-content; min-width: 120px; align-self: flex-start; text-align: center; margin-bottom: 5px; }
+    .font-default-btn:active { transform: scale(0.97); background: #e02a20; }
+    .font-default-btn.active { outline: 2px solid white; outline-offset: 2px; }
+    
+    .font-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .font-card { background: transparent; border-radius: 12px; padding: 18px 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid transparent; transition: 0.1s; }
+    .font-card:active { background: #2f2f31; transform: scale(0.95); }
+    .font-card.active { border-color: #fff; background: #2c2c2e; }
+    .font-preview-text { font-size: 19px; color: white; display: flex; align-items: center; justify-content: center; }
+    
+    /* Theme Overlay */
+    .theme-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #1a1a1c; z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    .theme-card { border-radius: 12px; height: 75px; display: flex; align-items: flex-end; justify-content: flex-start; padding: 12px; cursor: pointer; border: 2px solid transparent; transition: 0.1s; box-shadow: inset 0 -35px 30px -15px rgba(0,0,0,0.6); position: relative; overflow: hidden; }
+    .theme-card:active { transform: scale(0.95); }
+    .theme-name { color: white; font-size: 13px; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.9); z-index: 2; }
+    
+    /* Sticker Overlay */
+    .sticker-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #1a1a1c; z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    .sticker-nav-pill { background: #2a2a2c; color: #aaa; border: none; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.1s; }
+    .sticker-nav-pill.active { background: #ff3b30; color: white; }
+    .sticker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .sticker-card { background: #252527; border-radius: 12px; padding: 18px 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; font-size: 18px; color: white; border: 1px solid transparent; }
+    .sticker-card:active { transform: scale(0.95); background: #333336; border-color: #555; }
+    
+    /* Editor Overlay */
+    .editor-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #1a1a1c; z-index: 10; display: none; flex-direction: column; overflow: hidden; }
+    .editor-layout { flex: 1; display: flex; padding: 15px; gap: 15px; }
+    .editor-side-panel { display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: center; }
+    .editor-action-btn { background: #252527; color: white; border: none; padding: 14px 10px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+    .editor-action-btn:active { background: #3a3a3c; transform: scale(0.96); }
+    
+    .editor-dpad-container { flex: 1.5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+    .editor-dpad-row { display: flex; gap: 8px; }
+    .editor-dpad-btn { width: 55px; height: 50px; background: #2a2a2c; color: white; border: none; border-radius: 10px; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.6); transition: 0.1s; border-bottom: 3px solid #111; }
+    .editor-dpad-btn:active { transform: translateY(3px); border-bottom-width: 0px; background: #3a3a3c; }
+    .editor-dpad-btn.center-select { background: #1f1f21; color: #888; font-size: 24px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); border: none; cursor: default; }
+    
+    .editor-bottom-bar { display: flex; gap: 10px; padding: 10px 15px 25px 15px; background: #111; }
+    .editor-bottom-btn { padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; border: 1px solid #333; background: #222; color: #fff; cursor: pointer; }
+    .editor-bottom-btn:active { opacity: 0.7; }
+    
+    /* Resize Overlay */
+    .resize-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(26,26,28,0.98); z-index: 10; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(10px); }
+    .resize-btn { width: 100%; padding: 18px; background: #252527; color: white; border: 2px solid transparent; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.4); margin-bottom: 12px; }
+    .resize-btn:active { transform: scale(0.97); background: #333; }
+    
+    .settings { display: flex; flex-direction: column; gap: 10px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="settings">
+        <label style="font-size:14px;font-weight:bold;">Test PC Interaction</label>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="copyDummyText()" style="padding: 10px; cursor: pointer; flex: 1; border: 1px solid #007aff; background: #f0f8ff; color: #007aff; border-radius: 6px; font-weight: bold;">Copy System Text</button>
+        </div>
+    </div>
+
+    <div>
+        <div class="device-screen">
+            <div class="chat-header">TypeLanka Chat Demo</div>
+            <div class="input-area">
+                <div class="input-text" id="mainDisplay"></div>
+            </div>
+        </div>
+        
+        <div class="keyboard-container" id="keyboardContainer">
+            
+            <!-- CLIPBOARD OVERLAY UI -->
+            <div class="clipboard-overlay" id="clipboardOverlay">
+                <div class="clip-header">
+                    <button class="clip-back" onclick="closeOverlays()">←</button>
+                    <div class="clip-title">Clipboard</div>
+                    <button class="clip-clear-btn" onclick="clearUnpinnedClips()">Clear</button>
+                </div>
+                <div class="clip-list" id="clipList"></div>
+            </div>
+            
+            <!-- SETTINGS OVERLAY UI -->
+            <div class="settings-overlay" id="settingsOverlay">
+                <div class="settings-header">
+                    <button class="settings-back" onclick="closeOverlays()">✕</button>
+                </div>
+                <div class="settings-tools-area">
+                    <div class="customize-hint">Hold and drag to customize top bar</div>
+                    <div class="customize-bar">
+                        <div class="tool-drag-circle" style="font-weight:bold;font-size:12px;" onclick="toggleMode();closeOverlays()">EN</div>
+                        <div class="tool-drag-circle" onclick="showEmoji()">😀</div>
+                        <div class="tool-drag-circle" onclick="alert('✨ AI Predictive Text stylus active')">✨</div>
+                        <div class="tool-drag-circle" onclick="showClipboard()">📋</div>
+                        <div class="tool-drag-circle" style="font-size:13px;font-weight:bold;" onclick="showFont()">Aa</div>
+                        <div class="tool-drag-circle" onclick="closeOverlays()">✕</div>
+                    </div>
+                    
+                    <div class="tools-grid">
+                        <div class="tool-item" onclick="alert('✨ AI Stylist analyzing text context... Beta version active.')">
+                            <div class="tool-icon-btn">✨</div>
+                            <div class="tool-label">AI Stylist</div>
+                        </div>
+                        <div class="tool-item" onclick="toggleIncognito()">
+                            <div class="tool-icon-btn"><span id="icon-incognito">👓</span></div>
+                            <div class="tool-label">Incognito</div>
+                        </div>
+                        <div class="tool-item" onclick="toggleNightMode()">
+                            <div class="tool-icon-btn"><span id="icon-night">🌙</span></div>
+                            <div class="tool-label">Night Mode</div>
+                        </div>
+                        <div class="tool-item" onclick="showThemes()">
+                            <div class="tool-icon-btn">🎨</div>
+                            <div class="tool-label">Themes</div>
+                        </div>
+                        <div class="tool-item" onclick="showStickers()">
+                            <div class="tool-icon-btn">⭐</div>
+                            <div class="tool-label">Stickers</div>
+                        </div>
+                        <div class="tool-item" onclick="showClipboard()">
+                            <div class="tool-icon-btn">📋</div>
+                            <div class="tool-label">Clipboard</div>
+                        </div>
+                        <div class="tool-item" onclick="showEditor()">
+                            <div class="tool-icon-btn" style="font-family:serif;font-weight:bold;">T</div>
+                            <div class="tool-label">Edit Text</div>
+                        </div>
+                        <div class="tool-item" onclick="showEmoji()">
+                            <div class="tool-icon-btn">😀</div>
+                            <div class="tool-label">Emoji</div>
+                        </div>
+                        <div class="tool-item" onclick="toggleSetting('sound')">
+                            <div class="tool-icon-btn"><span id="icon-sound">🔊</span></div>
+                            <div class="tool-label">Sounds</div>
+                        </div>
+                        <div class="tool-item" onclick="toggleSetting('haptic')">
+                            <div class="tool-icon-btn"><span id="icon-haptic">📴</span></div>
+                            <div class="tool-label">Haptic</div>
+                        </div>
+                        <div class="tool-item" onclick="showResize()">
+                            <div class="tool-icon-btn">↕️</div>
+                            <div class="tool-label">Resize</div>
+                        </div>
+                        <div class="tool-item" onclick="alert('⚙️ Advanced TypeLanka Settings Hub is open.')">
+                            <div class="tool-icon-btn">⚙️</div>
+                            <div class="tool-label">Settings</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="emoji-overlay" id="emojiOverlay">
+                <div class="emoji-search-bar">
+                    <span class="emoji-search-icon">🔍</span>
+                    <input type="text" class="emoji-search-input" placeholder="Search Emoji">
+                </div>
+                <div class="emoji-scroll-area" id="emojiScrollArea">
+                    <!-- Emulated grids go here (Javascript injected) -->
+                </div>
+                <div class="emoji-bottom-bar" id="emojiNavBar">
+                    <button class="emoji-nav-btn emoji-nav-text" onclick="closeOverlays()">ABC</button>
+                    <button class="emoji-nav-btn active" onclick="scrollToCategory('recent')">🕐</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('smileys')">😀</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('animals')">🐻</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('food')">🍔</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('sports')">⚽</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('places')">🚗</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('objects')">💡</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('symbols')">🔣</button>
+                    <button class="emoji-nav-btn" onclick="scrollToCategory('flags')">🏁</button>
+                    <button class="emoji-nav-btn" onclick="del()">⌫</button>
+                </div>
+            </div>
+
+            <div class="font-overlay" id="fontOverlay">
+                <div class="font-header">
+                    <button class="font-back" onclick="closeOverlays()">←</button>
+                    <div class="font-title">Stylish Fonts</div>
+                </div>
+                <div class="font-scroll-area" id="fontList">
+                    <!-- Javascript injected -->
+                </div>
+            </div>
+            
+            <!-- THEME OVERLAY UI -->
+            <div class="theme-overlay" id="themeOverlay">
+                <div class="font-header">
+                    <button class="font-back" onclick="closeOverlays()">←</button>
+                    <div class="font-title">Theme Store</div>
+                </div>
+                <div class="font-scroll-area" id="themeList">
+                    <div class="font-section-title">Solid Colors</div>
+                    <div class="font-grid">
+                        <div class="theme-card" style="background:#18181a;" onclick="applyTheme('dark')">
+                            <div class="theme-name">Dark OLED</div>
+                        </div>
+                        <div class="theme-card" style="background:#d1d5db; color:black; border:1px solid #999; box-shadow: none;" onclick="applyTheme('light')">
+                            <div class="theme-name" style="color:#000; text-shadow:none;">Classic Light</div>
+                        </div>
+                        <div class="theme-card" style="background:#0a84ff;" onclick="applyTheme('blue')">
+                            <div class="theme-name">Ocean Blue</div>
+                        </div>
+                    </div>
+                    
+                    <div class="font-section-title" style="margin-top:10px;">Premium Gradients</div>
+                    <div class="font-grid">
+                        <div class="theme-card" style="background:linear-gradient(135deg, #1a0b2e, #4b0055);" onclick="applyTheme('cyberpunk')">
+                            <div class="theme-name">Cyberpunk</div>
+                        </div>
+                        <div class="theme-card" style="background:linear-gradient(135deg, #4a00e0, #8e2de2);" onclick="applyTheme('sunset')">
+                            <div class="theme-name">Sunset</div>
+                        </div>
+                        <div class="theme-card" style="background:linear-gradient(135deg, #001f1f, #004d40);" onclick="applyTheme('mint')">
+                            <div class="theme-name">Mint Fresh</div>
+                        </div>
+                    </div>
+
+                    <div class="font-section-title" style="margin-top:15px;">Luxury & Minimal</div>
+                    <div class="font-grid">
+                        <div class="theme-card" style="background:#000; border: 1px solid #d4af37;" onclick="applyTheme('gold')">
+                            <div class="theme-name" style="color:#d4af37; text-shadow:none;">Gold Elite</div>
+                        </div>
+                        <div class="theme-card" style="background:#070707; border: 1px solid #00ff00;" onclick="applyTheme('matrix')">
+                            <div class="theme-name" style="color:#00ff00; text-shadow:none; font-family:monospace;">Zero Day</div>
+                        </div>
+                        <div class="theme-card" style="background:linear-gradient(135deg, #111, #4a0000);" onclick="applyTheme('bloodmoon')">
+                            <div class="theme-name" style="color:#ff3333; text-shadow:none;">Blood Moon</div>
+                        </div>
+                    </div>
+                    
+                    <div class="font-section-title" style="margin-top:15px;">Pastel & Vibes</div>
+                    <div class="font-grid">
+                        <div class="theme-card" style="background:linear-gradient(135deg, #ffd1dc, #fff);" onclick="applyTheme('cherry')">
+                            <div class="theme-name" style="color:#ff4d6d; text-shadow:none;">Cherry Pink</div>
+                        </div>
+                        <div class="theme-card" style="background:linear-gradient(135deg, #e6e6fa, #cdecfa);" onclick="applyTheme('lavender')">
+                            <div class="theme-name" style="color:#5a189a; text-shadow:none;">Lavender</div>
+                        </div>
+                        <div class="theme-card" style="background:linear-gradient(135deg, #ff007f, #ff7b00);" onclick="applyTheme('neon')">
+                            <div class="theme-name" style="color:#fff;">Neon Fire</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- STICKER OVERLAY UI -->
+            <div class="sticker-overlay" id="stickerOverlay">
+                <div class="font-header">
+                    <button class="font-back" onclick="closeOverlays()">←</button>
+                    <div class="font-title">Kaomoji Stickers</div>
+                </div>
+                
+                <div style="display:flex; overflow-x:auto; padding:12px 15px; gap:8px; border-bottom:1px solid #333;" id="stickerNav">
+                    <button class="sticker-nav-pill active" onclick="loadStickers('love')">Love</button>
+                    <button class="sticker-nav-pill" onclick="loadStickers('happy')">Happy</button>
+                    <button class="sticker-nav-pill" onclick="loadStickers('sad')">Sad</button>
+                    <button class="sticker-nav-pill" onclick="loadStickers('angry')">Angry</button>
+                    <button class="sticker-nav-pill" onclick="loadStickers('animals')">Animals</button>
+                </div>
+                
+                <div class="font-scroll-area" id="stickerList">
+                    <!-- Javascript injected -->
+                </div>
+            </div>
+            
+            <!-- TEXT EDITOR OVERLAY UI -->
+            <div class="editor-overlay" id="editorOverlay">
+                <div class="font-header">
+                    <button class="font-back" onclick="closeOverlays()">←</button>
+                    <div class="font-title">Precision Text Editor</div>
+                </div>
+                
+                <div class="editor-layout">
+                    <div class="editor-side-panel">
+                        <button class="editor-action-btn" onclick="editorAction('select')">Select</button>
+                        <button class="editor-action-btn" onclick="editorAction('selectAll')">Select All</button>
+                        <button class="editor-action-btn" onclick="editorAction('copy')">Copy Text</button>
+                        <button class="editor-action-btn" onclick="editorAction('paste')">Paste Text</button>
+                    </div>
+                    
+                    <div class="editor-dpad-container">
+                        <div class="editor-dpad-row">
+                            <button class="editor-dpad-btn" onclick="editorAction('up')">↑</button>
+                        </div>
+                        <div class="editor-dpad-row">
+                            <button class="editor-dpad-btn" onclick="editorAction('left')">←</button>
+                            <button class="editor-dpad-btn center-select" onclick="editorAction('select')">⛶</button>
+                            <button class="editor-dpad-btn" onclick="editorAction('right')">→</button>
+                        </div>
+                        <div class="editor-dpad-row">
+                            <button class="editor-dpad-btn" onclick="editorAction('down')">↓</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editor-bottom-bar">
+                    <button class="editor-bottom-btn" style="flex:1;" onclick="editorAction('clear')">Clear All</button>
+                    <button class="editor-bottom-btn" style="flex:1.5; background:#007aff; border:none; color:white;" onclick="closeOverlays()">Done</button>
+                    <button class="editor-bottom-btn" style="flex:1;" onclick="del()">⌫</button>
+                </div>
+            </div>
+            
+            <!-- RESIZE OVERLAY UI -->
+            <div class="resize-overlay" id="resizeOverlay">
+                <div class="font-header">
+                    <button class="font-back" onclick="closeOverlays()">←</button>
+                    <div class="font-title">Resize Keyboard</div>
+                </div>
+                
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 30px;">
+                    <div style="color:#aaa; font-size:15px; text-align:center; margin-bottom: 25px;">Select your preferred typing height</div>
+                    
+                    <button class="resize-btn" id="btn-size-tall" onclick="setKeyboardHeight('tall')">Tall (Full Reach)</button>
+                    <button class="resize-btn" id="btn-size-normal" style="border-color:#007aff; background:rgba(0,122,255,0.15);" onclick="setKeyboardHeight('normal')">Normal (Default)</button>
+                    <button class="resize-btn" id="btn-size-short" onclick="setKeyboardHeight('short')">Short (More Screen)</button>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <button class="editor-bottom-btn" style="width:100%; height:50px; background:#007aff; border:none; border-radius:12px; color:white; font-size:16px;" onclick="closeOverlays()">Apply Size</button>
+                </div>
+            </div>
+
+            <!-- MAIN KEYBOARD UI -->
+            <div id="regularKeyboard" style="display: flex; flex-direction: column; height: 100%;">
+                
+                <div class="top-toolbar" id="toolsToolbar">
+                    <button class="tool-btn lang" onclick="toggleMode()"><span id="langInd">SI</span></button>
+                    <button class="tool-btn" onclick="showEmoji()">😀</button>
+                    <button class="tool-btn" onclick="showFont()">Aa</button>
+                    <button class="tool-btn" onclick="showClipboard()">📋</button>
+                    <button class="tool-btn" onclick="showSettings()">⚙️</button>
+                    <button class="tool-btn" style="background:transparent; border: 1px solid #444; font-size:12px;" onclick="togglePredictiveBar()">˅</button>
+                </div>
+                
+                <div class="top-toolbar" id="suggestionToolbar" style="display:none; padding:0 5px; gap:8px;">
+                    <button class="tool-btn lang" onclick="toggleMode()"><span id="langInd2">SI</span></button>
+                    <div class="suggestion-item" onclick="insertSuggestion('මම')" id="sugg1">මම</div>
+                    <div class="suggestion-item" style="font-weight: bold; color: #fff; background: rgba(255,255,255,0.1);" id="sugg2" onclick="insertSuggestion('ඔයා')">ඔයා</div>
+                    <div class="suggestion-item" onclick="insertSuggestion('කොහොමද')" id="sugg3">කොහොමද</div>
+                    <button class="tool-btn" style="background:transparent; border: 1px solid #444; font-size:18px;" onclick="togglePredictiveBar()">^</button>
+                </div>
+                
+                <div class="keyboard-keys" id="keysArea">
+                    <div class="keyboard-row">
+                        <button class="key" onclick="k('q')">q<span class="key-subhint">1</span></button>
+                        <button class="key" onclick="k('w')">w<span class="key-subhint">2</span></button>
+                        <button class="key" onclick="k('e')">e<span class="key-subhint">3</span></button>
+                        <button class="key" onclick="k('r')">r<span class="key-subhint">4</span></button>
+                        <button class="key" onclick="k('t')">t<span class="key-subhint">5</span></button>
+                        <button class="key" onclick="k('y')">y<span class="key-subhint">6</span></button>
+                        <button class="key" onclick="k('u')">u<span class="key-subhint">7</span></button>
+                        <button class="key" onclick="k('i')">i<span class="key-subhint">8</span></button>
+                        <button class="key" onclick="k('o')">o<span class="key-subhint">9</span></button>
+                        <button class="key" onclick="k('p')">p<span class="key-subhint">0</span></button>
+                    </div>
+                    <div class="keyboard-row" style="padding: 0 5%;">
+                        <button class="key" onclick="k('a')">a<span class="key-subhint">@</span></button>
+                        <button class="key" onclick="k('s')">s<span class="key-subhint">#</span></button>
+                        <button class="key" onclick="k('d')">d<span class="key-subhint">$</span></button>
+                        <button class="key" onclick="k('f')">f<span class="key-subhint">-</span></button>
+                        <button class="key" onclick="k('g')">g<span class="key-subhint">&</span></button>
+                        <button class="key" onclick="k('h')">h<span class="key-subhint">-</span></button>
+                        <button class="key" onclick="k('j')">j<span class="key-subhint">+</span></button>
+                        <button class="key" onclick="k('k')">k<span class="key-subhint">(</span></button>
+                        <button class="key" onclick="k('l')">l<span class="key-subhint">)</span></button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="key key-special" onclick="toggleShift()" id="shiftBtn">⇧</button>
+                        <button class="key" onclick="k('z')">z<span class="key-subhint">*</span></button>
+                        <button class="key" onclick="k('x')">x<span class="key-subhint">"</span></button>
+                        <button class="key" onclick="k('c')">c<span class="key-subhint">'</span></button>
+                        <button class="key" onclick="k('v')">v<span class="key-subhint">:</span></button>
+                        <button class="key" onclick="k('b')">b<span class="key-subhint">;</span></button>
+                        <button class="key" onclick="k('n')">n<span class="key-subhint">!</span></button>
+                        <button class="key" onclick="k('m')">m<span class="key-subhint">?</span></button>
+                        <button class="key key-special" onclick="del()">⌫</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="key key-special">123</button>
+                        <button class="key key-special" onclick="k(',')">,</button>
+                        <button class="key key-space" onclick="space()">TypeLanka</button>
+                        <button class="key key-special" onclick="k('.')">.</button>
+                        <button class="key key-return" onclick="enter()">↵</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Transliteration Core
+const consonants = { "k": "ක්", "g": "ග්", "c": "ච්", "j": "ජ්", "t": "ට්", "d": "ඩ්", "th": "ත්", "dh": "ද්", "n": "න්", "p": "ප්", "b": "බ්", "m": "ම්", "y": "ය්", "r": "ර්", "l": "ල්", "v": "ව්", "w": "ව්", "s": "ස්", "sh": "ෂ්", "h": "හ්", "f": "ෆ්", "nd": "න්‍ද්", "mb": "ම්බ්", "ng": "න්‍ග්" };
+const vowels = { "a": "අ", "aa": "ආ", "ae": "ඇ", "aee": "ඈ", "i": "ඉ", "ii": "ඊ", "u": "උ", "uu": "ඌ", "oo": "ඌ", "e": "එ", "ee": "ඒ", "ea": "ඒ", "o": "ඔ", "oa": "ඕ", "au": "ඖ" };
+const vowelModifiers = { "a": "", "aa": "ා", "ae": "ැ", "aee": "ෑ", "i": "ි", "ii": "ී", "u": "ු", "uu": "ූ", "oo": "ූ", "e": "ෙ", "ee": "ේ", "ea": "ේ", "o": "ො", "oa": "ෝ", "au": "ෞ" };
+
+function transliterate(text) {
+    if (!text) return "";
+    let result = ""; let i = 0; let chars = text.toLowerCase().split(''); let n = chars.length;
+    let isAfterVowel = false, isStartOrSpace = true;
+    while (i < n) {
+        if (chars[i] === " ") { result += " "; i++; isStartOrSpace = true; isAfterVowel = false; continue; }
+        if (isStartOrSpace || isAfterVowel) {
+            let [match, len] = findLongestMatch(vowels, chars, i);
+            if (len > 0) { result += match; i += len; isStartOrSpace = false; isAfterVowel = true; continue; }
+        }
+        let [cMatch, cLen] = findLongestMatch(consonants, chars, i);
+        if (cLen > 0) {
+            isStartOrSpace = false; isAfterVowel = false;
+            let [vMatch, vLen] = findLongestMatch(vowelModifiers, chars, i + cLen);
+            if (vLen > 0) {
+                let baseConsonant = cMatch.slice(0, -1); result += baseConsonant + vMatch; i += cLen + vLen; isAfterVowel = true;
+            } else { result += cMatch; i += cLen; }
+            continue;
+        }
+        let [vow, vLen2] = findLongestMatch(vowels, chars, i);
+        if (vLen2 > 0) { result += vow; i += vLen2; isStartOrSpace = false; isAfterVowel = true; continue; }
+        result += chars[i]; i++; isStartOrSpace = false; isAfterVowel = false;
+    }
+    return result;
+}
+
+function findLongestMatch(dictionary, chars, index) {
+    let longestMatch = "", matchLen = 0, currentStr = "";
+    for (let i = 0; i < Math.min(4, chars.length - index); i++) {
+        currentStr += chars[index + i];
+        if (dictionary[currentStr] !== undefined) { longestMatch = dictionary[currentStr]; matchLen = i + 1; }
+    }
+    return [longestMatch, matchLen];
+}
+
+let pBoard = [
+    { id: 1, text: "Check out TypeLanka!", pinned: true },
+    { id: 2, text: "Advanced AI-free keyboard", pinned: false }
+];
+let nextClipId = 3;
+let mode = 'si', isShifted = false;
+let typedTextFull = "", currentWord = "";
+let activeFont = 'normal';
+
+const baseMap = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const fontMaps = {
+    'normal': { name: "Normal", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" },
+    'bold': { name: "Bold", chars: "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇" },
+    'italic': { name: "Italic", chars: "𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘟𝘠𝘡𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘹𝘺𝘻" },
+    'gothic': { name: "Gothic", chars: "𝕬𝕭𝕮𝕯𝕰𝕱𝕲𝕳𝕴𝕵𝕶𝕷𝕸𝕹𝕺𝕻𝕼𝕽𝕾𝕿𝖀𝖁𝖂𝖃𝖄𝖅𝖆𝖇𝖈𝖉𝖊𝖋𝖌𝖍𝖎𝖏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝖟" },
+    'monospace': { name: "Mono", chars: "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣" },
+    'bubbles': { name: "Circles", chars: "ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ" },
+    'script': { name: "Script", chars: "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵𝒶𝒷𝒸𝒹ℯ𝒻ℊ𝒽𝒾𝒿𝓀𝓁𝓂𝓃ℴ𝓅𝓆𝓇𝓈𝓉𝓊𝓋𝓌𝓍𝓎𝓏" },
+    'boldscript': { name: "Bold Script", chars: "𝓐𝓑𝓒𝓓𝓔𝓕𝓖𝓗𝓘𝓙𝓚𝓛𝓜𝓝𝓞𝓟𝓠𝓡𝓢𝓣𝓤𝓥𝓦𝓧𝓨𝓩𝓪𝓫𝓬𝓭𝓮𝓯𝓰𝓱𝓲𝓳𝓴𝓵𝓶𝓷𝓸𝓹𝓺𝓻𝓼𝓽𝓾𝓿𝔀𝔁𝔂𝔃" },
+    'outline': { name: "Outline", chars: "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝕖𝕗𝕘𝕙𝕚𝕛𝕜𝕝𝕞𝕟𝕠𝕡𝕢𝕣𝕤𝕥𝕦𝕧𝕨𝕩𝕪𝕫" },
+    'smallcaps': { name: "Small Caps", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ" },
+    'square': { name: "Square", chars: "🄰🄱🄲🄳🄴🄵🄶🄷🄸🄹🄺🄻🄼🄽🄾🄿🅀🅁🅂🅃🅄🅅🅆🅇🅈🅉🄰🄱🄲🄳🄴🄵🄶🄷🄸🄹🄺🄻🄼🄽🄾🄿🅀🅁🅂🅃🅄🅅🅆🅇🅈🅉" },
+    'wide': { name: "Wide", chars: "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ" },
+    'invertedcircles': { name: "Dark Circles", chars: "🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩" },
+    'invertedsquares': { name: "Dark Squares", chars: "🅰🅱🅲🅳🅴🅵🅶🅷🅸🅹🅺🅻🅼🅽🅾🅿🆀🆁🆂🆃🆄🆅🆆🆇🆈🆉🅰🅱🅲🅳🅴🅵🅶🅷🅸🅹🅺🅻🅼🅽🅾🅿🆀🆁🆂🆃🆄🆅🆆🆇🆈🆉" },
+    'fraktur': { name: "Fraktur", chars: "𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍𝔎𝔏𝔐𝔑𝔒𝔓𝔔ℜ𝔖𝔗𝔘𝔙𝔚𝔛𝔜ℨ𝔞𝔟𝔠𝔡𝔢𝔣𝔤𝔥𝔦𝔧𝔨𝔩𝔪𝔫𝔬𝔭𝔮𝔯𝔰𝔱𝔲𝔳𝔴𝔵𝔶𝔷" },
+    'parenthesized': { name: "Brackets", chars: "⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵" }
+};
+
+function mapFont(text, fontId) {
+    if (!fontId || fontId === 'normal') return text;
+    let targetArr = Array.from(fontMaps[fontId].chars);
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        let idx = baseMap.indexOf(char);
+        if (idx !== -1) result += targetArr[idx];
+        else result += char;
+    }
+    return result;
+}
+
+function toggleMode() { 
+    mode = mode === 'si' ? 'en' : 'si'; 
+    document.getElementById('langInd').innerText = mode.toUpperCase(); 
+    document.getElementById('langInd2').innerText = mode.toUpperCase(); 
+    updateDisplayPreview(); 
+    updateSuggestions();
+}
+function toggleShift() { isShifted = !isShifted; document.getElementById('keysArea').classList.toggle('uppercase'); document.getElementById('shiftBtn').style.background = isShifted ? '#fff' : '#151516'; document.getElementById('shiftBtn').style.color = isShifted ? '#000' : '#ccc'; }
+function k(char) { currentWord += isShifted ? char.toUpperCase() : char; updateDisplayPreview(); if(isShifted) toggleShift(); updateSuggestions(); }
+function deleteLastGrapheme(str) {
+    if (!str) return "";
+    let arr = Array.from(str);
+    if (arr.length === 0) return "";
+    let last = arr.pop();
+    while (arr.length > 0 && (last === '\u200D' || (last >= '\uFE00' && last <= '\uFE0F'))) { last = arr.pop(); }
+    return arr.join('');
+}
+function del() { 
+    if (currentWord.length > 0) { currentWord = deleteLastGrapheme(currentWord); } 
+    else if (typedTextFull.length > 0) { typedTextFull = deleteLastGrapheme(typedTextFull); } 
+    updateDisplayPreview(); 
+    updateSuggestions();
+}
+function space() { commitCurrentWord(); typedTextFull += " "; updateDisplayPreview(); updateSuggestions(); }
+function enter() { commitCurrentWord(); typedTextFull += "\n"; updateDisplayPreview(); updateSuggestions(); }
+
+function commitCurrentWord() {
+    if (currentWord.length > 0) {
+        let finalWord = mode === 'si' ? transliterate(currentWord) : mapFont(currentWord, activeFont);
+        typedTextFull += finalWord; currentWord = "";
+    }
+}
+
+let isPredictiveMode = false;
+function togglePredictiveBar() {
+    isPredictiveMode = !isPredictiveMode;
+    document.getElementById('toolsToolbar').style.display = isPredictiveMode ? 'none' : 'flex';
+    document.getElementById('suggestionToolbar').style.display = isPredictiveMode ? 'flex' : 'none';
+    if(isPredictiveMode) updateSuggestions();
+}
+
+const mockDictionary = {
+    'ko': ['කොහොමද', 'කොහෙද', 'කොටස'], 'koh': ['කොහොමද', 'කොහෙද', 'කොටස'],
+    'ma': ['මම', 'මගේ', 'මල'], 'mam': ['මම', 'මගේ', 'මමත්'],
+    'oba': ['ඔබ', 'ඔබට', 'ඔබගේ'], 'ob': ['ඔබ', 'ඔබට', 'ඔබගේ'],
+    'ap': ['අපි', 'අපිට', 'අපේ'], 'api': ['අපි', 'අපිට', 'අපේ'],
+    'ya': ['යනවා', 'යන්න', 'යාලුවා'], 'yan': ['යනවා', 'යන්න', 'යාලුවා'],
+    'na': ['නැහැ', 'නම', 'නව'], 'nah': ['නැහැ', 'නම', 'නව'],
+    'ba': ['බෑ', 'බලාගෙන', 'බත්'], 'baa': ['බෑ', 'බලාගෙන', 'බත්'],
+    'ka': ['කනවා', 'කවුද', 'කතා'], 'kar': ['කරනවා', 'කරන්න', 'කරුණාකර']
+};
+
+function updateSuggestions() {
+    if (!isPredictiveMode) return;
+    
+    let s1 = document.getElementById('sugg1');
+    let s2 = document.getElementById('sugg2');
+    let s3 = document.getElementById('sugg3');
+    
+    if (!currentWord) {
+        s1.innerText = 'මම'; s2.innerText = 'ඔයා'; s3.innerText = 'කොහොමද';
+        s1.onclick = () => insertSuggestion('මම');
+        s2.onclick = () => insertSuggestion('ඔයා');
+        s3.onclick = () => insertSuggestion('කොහොමද');
+        return;
+    }
+    
+    let prefix = currentWord.substring(0, 2).toLowerCase();
+    let prefix3 = currentWord.substring(0, 3).toLowerCase();
+    let suggs = mockDictionary[prefix3] || mockDictionary[prefix] || ['එක', 'යනවා', 'කරන්න'];
+    let translit = mode === 'si' ? transliterate(currentWord) : mapFont(currentWord, activeFont);
+    
+    s1.innerText = suggs[1] || 'අපි';
+    s2.innerText = translit || '...';
+    s3.innerText = suggs[0] || 'ඔබ';
+    
+    s1.onclick = () => insertSuggestion(suggs[1] || 'අපි');
+    s2.onclick = () => insertSuggestion(translit);
+    s3.onclick = () => insertSuggestion(suggs[0] || 'ඔබ');
+}
+
+function insertSuggestion(word) {
+    if(!word) return;
+    typedTextFull += word + " ";
+    currentWord = "";
+    updateDisplayPreview();
+    updateSuggestions();
+}
+
+function updateDisplayPreview() { 
+    let previewWord = mode === 'si' ? transliterate(currentWord) : mapFont(currentWord, activeFont);
+    document.getElementById('mainDisplay').innerText = typedTextFull + previewWord; 
+}
+
+function closeOverlays() {
+    document.getElementById('clipboardOverlay').style.display = 'none';
+    document.getElementById('settingsOverlay').style.display = 'none';
+    document.getElementById('emojiOverlay').style.display = 'none';
+    document.getElementById('fontOverlay').style.display = 'none';
+    document.getElementById('themeOverlay').style.display = 'none';
+    document.getElementById('stickerOverlay').style.display = 'none';
+    document.getElementById('editorOverlay').style.display = 'none';
+    document.getElementById('resizeOverlay').style.display = 'none';
+    document.getElementById('regularKeyboard').style.display = 'flex';
+}
+
+function showSettings() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('settingsOverlay').style.display = 'flex'; }
+function showEmoji() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('emojiOverlay').style.display = 'flex'; if(document.getElementById('emojiScrollArea').children.length === 0) { initEmojis(); } }
+function showFont() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('fontOverlay').style.display = 'flex'; renderFonts(); }
+function showThemes() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('settingsOverlay').style.display = 'none'; document.getElementById('themeOverlay').style.display = 'flex'; }
+function showStickers() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('settingsOverlay').style.display = 'none'; document.getElementById('stickerOverlay').style.display = 'flex'; loadStickers('love'); }
+function showEditor() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('settingsOverlay').style.display = 'none'; document.getElementById('editorOverlay').style.display = 'flex'; }
+function showResize() { document.getElementById('regularKeyboard').style.display = 'none'; document.getElementById('settingsOverlay').style.display = 'none'; document.getElementById('resizeOverlay').style.display = 'flex'; }
+
+const emojiCategories = {
+    'recent': ["😀","😂","❤️","👍","🙏","🔥","✨","💯"],
+    'smileys': ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🤗","🫡","🤔","🫢","🤭","🤫","🤥","😶","😶‍🌫️","😐","😑","😬","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","😵‍💫","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","💋","🩸","❤️"],
+    'animals': ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄️","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪰","🪲","🪳","🦟","🦗","🕷","🕸","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🦭","🐊","🐅","🐆","🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩","🦮","🐕‍🦺","🐈","🐈‍⬛"],
+    'food': ["🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🫑","🌽","🥕","🫒","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🦴","🌭","🍔","🍟","🍕","🫓","🥪","🥙","🧆","🌮","🌯","🫔","🥗","🥘","🫕","🥫","🍝","🍜","🍲","🍛","🍣","🍱","🥟","🦪","🍤","🍙","🍚","🍘","🍥","🥠","🥮","🍢"],
+    'sports': ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🏑","🥍","🏏","🪃","🥅","⛳","🪁","🏹","🎣","🤿","🥊","🥋","🎽","🛹","🛼","🛷","⛸","🥌","🎿","⛷","🏂","🪂"],
+    'places': ["🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🦯","🦽","🦼","🛴","🚲","🛵","🏍","🛺","🚨","🚔","🚍","🚘","🚖","🚡","🚠","🚟","🚃","🚋","🚞","🚝","🚄","🚅","🚈","🚂","🚆","🚇","🚊","🚉","✈️","🛫","🛬","🛩","💺","🛰","🚀","🛸","🚁","🛶","⛵️","🚤","🛥","🛳","⛴","🚢","⛰","🏔","🗻","🌋","🗾","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🧱","🪨","🪵","🛖","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏪","🏫","🏩","💒","🏛","⛪️","🕌","🛕","🕍"],
+    'objects': ["⌚️","📱","📲","💻","⌨️","🖥","🖨","🖱","🖲","🕹","🗜","💽","💾","💿","📀","📼","📷","📸","📹","🎥","📽","🎞","📞","☎️","📟","📠","📺","📻","🎙","🎚","🎛","🧭","⏱","⏲","⏰","🕰","⌛️","⏳","📡","电池","🔌","💡","🔦","🕯","🪔","🧯","🛢","💸","💵","💴","💶","💷","🪙","💰","💳","💎","⚖️","🪜","🧰","🪛","🔧","🔨","⚒","🛠","⛏","🪚","🔩","⚙️","🪤","🧱","⛓","🧲","🔫","💣","🧨","🪓","🔪","🗡","⚔️","🛡","🚬","⚰️","🪦","⚱️","🏺","🔮","📿","🧿","💈"],
+    'symbols': ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️","✝️","☪️","🕉","☸️","✡️","🔯","🕎","☯️","☦️","🛐","⛎","♈️","♉️","♊️","♋️","♌️","♍️","♎️","♏️","♐️","♑️","♒️","♓️","🆔","⚛️","🉑","☢️","☣️","📴","📳","🈶","🈚️","🈸","🈺","🈷️","✴️","🆚","💮","🉐","㊙️","㊗️","🈴","🈵","🈹","🈲","🅰️","🅱️","🆎","🆑","🅾️","🆘","❌","⭕️","🛑","⛔️","📛","🚫","💯","💢"],
+    'flags': ["🏁","🚩","🎌","🏴","🏳️","🏳️‍🌈","🏳️‍⚧️","🏴‍☠️","🇦🇫","🇦🇽","🇦🇱","🇩🇿","🇦🇸","🇦🇩","🇦🇴","🇦🇮","🇦🇶","🇦🇬","🇦🇷","🇦🇲","🇦🇼","🇦🇺","🇦🇹","🇦🇿","🇧🇸","🇧🇭","🇧🇩","🇧🇧","🇧🇾","🇧🇪","🇧🇿","🇧🇯","🇧🇲","🇧🇹","🇧🇴","🇧🇦","🇧🇼","🇧🇷","🇮🇴","🇻🇬","🇧🇳","🇧🇬","🇧🇫","🇧🇮","🇰🇭","🇨🇲","🇨🇦","🇮🇨","🇨🇻","🇧🇶","🇰🇾","🇨🇫","🇹🇩","🇨🇱","🇨🇳","🇨🇽","🇨🇨","🇨🇴","🇰🇲","🇨🇬","🇨🇩","🇨🇰","🇨🇷","🇨🇮","🇭🇷","🇨🇺","🇨🇼","🇨🇾","🇨🇿","🇩🇰","🇩🇯","🇩🇲","🇩🇴","🇪🇨","🇪🇬","🇸🇻","🇬🇶","🇪🇷","🇪🇪","🇪🇹","🇪🇺","🇫🇰","🇫🇴","🇫🇯","🇫🇮","🇫🇷","🇬🇫","🇵🇫","🇹🇫","🇬🇦","🇬🇲","🇬🇪","🇩🇪","🇬🇭","🇬🇮","🇬🇷","🇬🇱","🇬🇩","🇬🇵","🇬🇺","🇬🇹","🇬🇬","🇬🇳","🇬🇼","🇬🇾","🇭🇹","🇭🇳","🇭🇰","🇭🇺","🇮🇸","🇮🇳","🇮🇩","🇮🇷","🇮🇶","🇮🇪","🇮🇲","🇮🇱","🇮🇹","🇯🇲","🇯🇵","🎌","🇯🇪","🇯🇴","🇰🇿","🇰🇪","🇰🇮","🇽🇰","🇰🇼","🇰🇬","🇱🇦","🇱🇻","🇱🇧","🇱🇸","🇱🇷","🇱🇾","🇱🇮","🇱🇹","🇱🇺","🇲🇴","🇲🇰","🇲🇬","🇲🇼","🇲🇾","🇲🇻","🇲🇱","🇲🇹","🇲🇭","🇲🇶","🇲🇷","🇲🇺","🇾🇹","🇲🇽","🇫🇲","🇲🇩","🇲🇨","🇲🇳","🇲🇪","🇲🇸","🇲🇦","🇲🇿","🇲🇲","🇳🇦","🇳🇷","🇳🇵","🇳🇱","🇳🇨","🇳🇿","🇳🇮","🇳🇪","🇳🇬","🇳🇺","🇳🇫","🇰🇵","🇲🇵","🇳🇴","🇴🇲","🇵🇰","🇵🇼","🇵🇸","🇵🇦","🇵🇬","🇵🇾","🇵🇪","🇵🇭","🇵🇳","🇵🇱","🇵🇹","🇵🇷","🇶🇦","🇷🇪","🇷🇴","🇷🇺","🇷🇼","🇼🇸","🇸🇲","🇸🇹","🇸🇦","🇸🇳","🇸🇷","🇸🇱","🇸🇬","🇸🇽","🇸🇰","🇸🇮","🇬🇸","🇸🇧","🇸🇴","🇿🇦","🇰🇷","🇸🇸","🇪🇸"]
+};
+
+function initEmojis() {
+    const scrollArea = document.getElementById('emojiScrollArea');
+    
+    for (const [category, emojis] of Object.entries(emojiCategories)) {
+        let titleWrap = document.createElement('div');
+        titleWrap.id = 'emoji-cat-' + category;
+        titleWrap.className = 'emoji-category-title';
+        titleWrap.innerText = category;
+        scrollArea.appendChild(titleWrap);
+        
+        let grid = document.createElement('div');
+        grid.className = 'emoji-grid';
+        
+        emojis.forEach(e => {
+            let btn = document.createElement('button');
+            btn.className = 'emoji-btn';
+            btn.innerText = e;
+            btn.onclick = () => { insertEmoji(e); };
+            grid.appendChild(btn);
+        });
+        
+        scrollArea.appendChild(grid);
+    }
+}
+
+function scrollToCategory(catId) {
+    let el = document.getElementById('emoji-cat-' + catId);
+    let scrollArea = document.getElementById('emojiScrollArea');
+    if (el) {
+        scrollArea.scrollTo({ top: el.offsetTop - scrollArea.offsetTop, behavior: 'smooth' });
+    }
+}
+
+function insertEmoji(emoji) {
+    commitCurrentWord();
+    typedTextFull += emoji;
+    updateDisplayPreview();
+}
+
+async function showClipboard() {
+    try {
+        let text = await navigator.clipboard.readText();
+        if (text && text.trim() !== "" && !pBoard.find(c => c.text === text)) {
+            pBoard.unshift({ id: nextClipId++, text: text, pinned: false });
+        }
+    } catch(err) {}
+    
+    document.getElementById('regularKeyboard').style.display = 'none';
+    document.getElementById('clipboardOverlay').style.display = 'flex';
+    renderClipboardItems();
+}
+
+function renderClipboardItems() {
+    let listUi = document.getElementById('clipList');
+    listUi.innerHTML = "";
+    
+    if (pBoard.length === 0) {
+        listUi.innerHTML = `<div class="clip-empty"><div class="clip-empty-icon">📋</div><div>Clipboard Empty</div></div>`;
+        return;
+    }
+    
+    let pinnedItems = pBoard.filter(c => c.pinned);
+    let recentItems = pBoard.filter(c => !c.pinned);
+    
+    if (pinnedItems.length > 0) {
+        let title = document.createElement('div'); title.className = 'section-title'; title.innerText = 'Pinned'; listUi.appendChild(title);
+        pinnedItems.forEach(item => listUi.appendChild(createClipCard(item)));
+    }
+    
+    if (recentItems.length > 0) {
+        let title = document.createElement('div'); title.className = 'section-title'; title.innerText = 'Recent'; listUi.appendChild(title);
+        recentItems.forEach(item => listUi.appendChild(createClipCard(item)));
+    }
+}
+
+function createClipCard(item) {
+    let card = document.createElement('div'); card.className = 'clip-item-card';
+    let textDiv = document.createElement('div'); textDiv.className = 'clip-item-text';
+    textDiv.innerText = item.text.length > 100 ? item.text.substring(0, 100) + "..." : item.text;
+    textDiv.onclick = () => { pasteItem(item.text); };
+    
+    let actionsDiv = document.createElement('div'); actionsDiv.className = 'clip-item-actions';
+    let pasteBtn = document.createElement('button'); pasteBtn.className = 'action-btn paste'; pasteBtn.innerHTML = '📥 <span>Paste</span>'; pasteBtn.onclick = () => { pasteItem(item.text); };
+    
+    let groupDiv = document.createElement('div'); groupDiv.className = 'action-group';
+    let pinBtn = document.createElement('button'); pinBtn.className = 'action-btn pin ' + (item.pinned ? 'active' : ''); pinBtn.innerHTML = item.pinned ? '★ <span>Pinned</span>' : '☆ <span>Pin</span>'; pinBtn.onclick = () => { item.pinned = !item.pinned; renderClipboardItems(); };
+    let delBtn = document.createElement('button'); delBtn.className = 'action-btn delete'; delBtn.innerHTML = '🗑'; delBtn.onclick = () => { pBoard = pBoard.filter(c => c.id !== item.id); renderClipboardItems(); };
+    
+    groupDiv.appendChild(pinBtn); groupDiv.appendChild(delBtn);
+    actionsDiv.appendChild(pasteBtn); actionsDiv.appendChild(groupDiv);
+    
+    card.appendChild(textDiv); card.appendChild(actionsDiv);
+    return card;
+}
+
+function pasteItem(text) {
+    commitCurrentWord(); typedTextFull += text; updateDisplayPreview(); closeOverlays();
+}
+
+function clearUnpinnedClips() { pBoard = pBoard.filter(c => c.pinned); renderClipboardItems(); }
+function copyDummyText() { let text = "Copied at " + new Date().toLocaleTimeString(); navigator.clipboard.writeText(text); alert("System copied!"); }
+
+function renderFonts() {
+    const scrollArea = document.getElementById('fontList');
+    scrollArea.innerHTML = "";
+    
+    let bookmarkTitle = document.createElement('div');
+    bookmarkTitle.className = 'font-section-title';
+    bookmarkTitle.innerText = "Bookmark";
+    scrollArea.appendChild(bookmarkTitle);
+    
+    let defaultBtn = document.createElement('button');
+    defaultBtn.className = 'font-default-btn' + (activeFont === 'normal' ? ' active' : '');
+    defaultBtn.innerText = "DEFAULT";
+    defaultBtn.onclick = () => { selectFont('normal'); };
+    scrollArea.appendChild(defaultBtn);
+    
+    let mainTitle = document.createElement('div');
+    mainTitle.className = 'font-section-title';
+    mainTitle.style.marginTop = '10px';
+    mainTitle.innerText = "Main Fonts";
+    scrollArea.appendChild(mainTitle);
+    
+    let grid = document.createElement('div');
+    grid.className = 'font-grid';
+    
+    for (const [id, fontData] of Object.entries(fontMaps)) {
+        if (id === 'normal') continue;
+        
+        let card = document.createElement('div');
+        card.className = 'font-card' + (activeFont === id ? ' active' : '');
+        card.onclick = () => { selectFont(id); };
+        
+        let displayPreview = mapFont("Abc", id);
+        card.innerHTML = `<div class="font-preview-text">${displayPreview}</div>`;
+        grid.appendChild(card);
+    }
+    
+    scrollArea.appendChild(grid);
+}
+
+function selectFont(id) {
+    activeFont = id;
+    if (mode === 'si') toggleMode(); // Auto-switch to EN mode for fonts
+    closeOverlays();
+    updateDisplayPreview();
+}
+
+let settingsData = { sound: true, haptic: false };
+function toggleSetting(id) {
+    settingsData[id] = !settingsData[id];
+    let iconEl = document.getElementById('icon-' + id);
+    if (id === 'sound') iconEl.innerText = settingsData[id] ? '🔊' : '🔇';
+    if (id === 'haptic') iconEl.innerText = settingsData[id] ? '📳' : '📴';
+}
+
+let isAppDark = false;
+function toggleNightMode() {
+    isAppDark = !isAppDark;
+    document.getElementById('icon-night').innerText = isAppDark ? '☀️' : '🌙';
+    let s = document.querySelector('.device-screen');
+    let t = document.querySelector('.input-text');
+    let a = document.querySelector('.input-area');
+    let h = document.querySelector('.chat-header');
+    if (isAppDark) {
+        s.style.backgroundColor = '#111'; h.style.color = '#fff'; a.style.backgroundColor = '#222'; t.style.color = '#fff';
+    } else {
+        s.style.backgroundColor = 'white'; h.style.color = '#333'; a.style.backgroundColor = '#fff'; t.style.color = '#000';
+    }
+    closeOverlays();
+}
+
+let isIncognito = false;
+function toggleIncognito() {
+    isIncognito = !isIncognito;
+    document.getElementById('icon-incognito').innerText = isIncognito ? '😎' : '👓';
+    document.getElementById('keyboardContainer').style.boxShadow = isIncognito ? 'inset 0 0 20px rgba(0, 150, 255, 0.5)' : 'none';
+    closeOverlays();
+}
+
+function clearAllClipboard() {
+    if (confirm("Are you sure you want to permanently delete all clipboard history (including pinned items)?")) {
+        pBoard = [];
+        renderClipboardItems();
+        alert("Clipboard cleared!");
+    }
+}
+
+function applyTheme(themeId) {
+    let kb = document.getElementById('keyboardContainer');
+    let keys = document.querySelectorAll('.key');
+    let specialKeys = document.querySelectorAll('.key-special');
+    let returnKey = document.querySelector('.key-return');
+    
+    // Reset global styles first
+    keys.forEach(k => { k.style.backgroundColor = ''; k.style.color = ''; k.style.boxShadow = ''; });
+    specialKeys.forEach(k => { k.style.backgroundColor = ''; k.style.color = ''; });
+    if(returnKey) { returnKey.style.backgroundColor = '#007aff'; returnKey.style.color = 'white'; }
+
+    // Map themes to CSS colors
+    if (themeId === 'dark') {
+        kb.style.background = 'linear-gradient(180deg, #18181a 0%, #0a0a0c 100%)';
+        // default CSS handles the rest
+    } else if (themeId === 'light') {
+        kb.style.background = '#d2d5dc';
+        keys.forEach(k => { k.style.backgroundColor = '#fff'; k.style.color = '#000'; k.style.boxShadow = '0 1px 1px rgba(0,0,0,0.3)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#b3b8c2'; k.style.color = '#000'; });
+        if(returnKey) document.querySelector('.key-return').style.color = '#fff';
+    } else if (themeId === 'blue') {
+        kb.style.background = 'linear-gradient(180deg, #0f4c81 0%, #062b4d 100%)';
+        keys.forEach(k => { k.style.backgroundColor = '#246eb5'; k.style.color = '#fff'; k.style.boxShadow = '0 1px 1px rgba(0,0,0,0.6)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#0a355c'; k.style.color = '#fff'; });
+    } else if (themeId === 'cyberpunk') {
+        kb.style.background = 'linear-gradient(135deg, #1a0b2e, #4b0055)';
+        keys.forEach(k => { k.style.backgroundColor = '#ff007f'; k.style.color = '#fff'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#7928ca'; k.style.color = '#fff'; });
+        if(returnKey) returnKey.style.backgroundColor = '#29ffc6';
+    } else if (themeId === 'sunset') {
+        kb.style.background = 'linear-gradient(135deg, #4a00e0, #8e2de2)';
+        keys.forEach(k => { k.style.backgroundColor = '#f12711'; k.style.color = '#fff'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#f5af19'; k.style.color = '#fff'; });
+        if(returnKey) returnKey.style.backgroundColor = '#ff416c';
+    } else if (themeId === 'mint') {
+        kb.style.background = 'linear-gradient(135deg, #001f1f, #004d40)';
+        keys.forEach(k => { k.style.backgroundColor = '#00897b'; k.style.color = '#fff'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#00695c'; k.style.color = '#bdfdf4'; });
+        if(returnKey) returnKey.style.backgroundColor = '#20e3b2';
+    } else if (themeId === 'gold') {
+        kb.style.background = '#0d0d0d';
+        keys.forEach(k => { k.style.backgroundColor = '#1a1a1a'; k.style.color = '#d4af37'; k.style.boxShadow = '0 1px 0 rgba(212, 175, 55, 0.4)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#000'; k.style.color = '#b8860b'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#d4af37'; returnKey.style.color = '#000'; }
+    } else if (themeId === 'matrix') {
+        kb.style.background = '#000';
+        keys.forEach(k => { k.style.backgroundColor = '#051a05'; k.style.color = '#00ff00'; k.style.boxShadow = '0 1px 0 rgba(0, 255, 0, 0.5)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#020d02'; k.style.color = '#008000'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#00ff00'; returnKey.style.color = '#000'; }
+    } else if (themeId === 'bloodmoon') {
+        kb.style.background = 'linear-gradient(135deg, #0a0000, #330000)';
+        keys.forEach(k => { k.style.backgroundColor = '#4a0000'; k.style.color = '#ff9999'; k.style.boxShadow = '0 1px 0 rgba(255, 0, 0, 0.6)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#260000'; k.style.color = '#ff4d4d'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#e60000'; returnKey.style.color = '#fff'; }
+    } else if (themeId === 'cherry') {
+        kb.style.background = 'linear-gradient(180deg, #ffe6eb 0%, #fff0f3 100%)';
+        keys.forEach(k => { k.style.backgroundColor = '#fff'; k.style.color = '#ff4d6d'; k.style.boxShadow = '0 1px 2px rgba(255, 77, 109, 0.2)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#ffccd5'; k.style.color = '#c9184a'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#ff4d6d'; returnKey.style.color = '#fff'; }
+    } else if (themeId === 'lavender') {
+        kb.style.background = 'linear-gradient(180deg, #f3e8ff 0%, #e2d1f9 100%)';
+        keys.forEach(k => { k.style.backgroundColor = '#fff'; k.style.color = '#5a189a'; k.style.boxShadow = '0 1px 2px rgba(90, 24, 154, 0.2)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#e0c3fc'; k.style.color = '#3c096c'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#7b2cbf'; returnKey.style.color = '#fff'; }
+    } else if (themeId === 'neon') {
+        kb.style.background = 'linear-gradient(135deg, #2a0845, #6441A5)';
+        keys.forEach(k => { k.style.backgroundColor = '#ff007f'; k.style.color = '#fff'; k.style.boxShadow = '0 0 10px rgba(255, 0, 127, 0.6)'; });
+        specialKeys.forEach(k => { k.style.backgroundColor = '#ff7b00'; k.style.color = '#fff'; });
+        if(returnKey) { returnKey.style.backgroundColor = '#fff'; returnKey.style.color = '#ff007f'; returnKey.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.8)'; }
+    }
+    
+    closeOverlays();
+}
+
+const stickerPacks = {
+    'love': ["(♡-_-♡)", "(─‿‿─)♡", "(´｡• ᵕ •｡`) ♡", "(*¯ ³¯*)♡", "(^_^)♡", "♡( ◡‿◡ )", "( ´ ▽ ` ).｡ｏ♡", "╰(*´︶`*)╯♡"],
+    'happy': ["(*^‿^*)", "(´･ᴗ･ ` )", "(o^▽^o)", "٩(◕‿◕｡)۶", "\\(★ω★)/", "o(>ω<)o", "(*°▽°*)", "✧(σ๑˃̶̀ꇴ˂̶́)σ"],
+    'sad': ["(╥﹏╥)", "(T_T)", "(ಥ_ಥ)", "(;﹏;)", "(｡•́︿•̀｡)", "(-_-)", "m(_ _)m", "(´-ω-`)"],
+    'angry': ["(｀_´)", "(ﾒ` ﾛ ´)", "(*μ_μ)", "(`ー´)", "(╬ Ò﹏Ó)", "ヽ( `д´*)ノ", "(>_<)", "ಠ_ಠ"],
+    'animals': ["(=^･ω･^=)", "(=①ω①=)", "(ᵔᴥᵔ)", "ʕ •ᴥ• ʔ", "／(^ x ^)＼", "U・ᴥ・U", "(・(oo)・)", "Ꮚ❁ꈊ❁Ꮚ"]
+};
+
+function loadStickers(category) {
+    document.querySelectorAll('.sticker-nav-pill').forEach(btn => {
+        if(btn.innerText.toLowerCase() === category) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    
+    let listUi = document.getElementById('stickerList');
+    listUi.innerHTML = "";
+    
+    let grid = document.createElement('div');
+    grid.className = 'sticker-grid';
+    
+    stickerPacks[category].forEach(stk => {
+        let card = document.createElement('div');
+        card.className = 'sticker-card';
+        card.innerText = stk;
+        card.onclick = () => { pasteItem(stk); };
+        grid.appendChild(card);
+    });
+    listUi.appendChild(grid);
+}
+
+function editorAction(action) {
+    if (action === 'clear') {
+        if(confirm("Clear all typed text from display?")) { typedTextFull = ""; currentWord = ""; updateDisplayPreview(); }
+    } else if (action === 'copy') {
+        let text = document.getElementById('mainDisplay').innerText;
+        if(text && text.trim() !== "") {
+            navigator.clipboard.writeText(text); alert("Text Copied: " + text);
+        } else {
+            alert("No text to copy!");
+        }
+    } else if (action === 'paste') {
+        navigator.clipboard.readText().then(text => { if(text) pasteItem(text); }).catch(e => alert("Could not paste."));
+    } else if (action === 'selectAll') {
+        let t = document.getElementById('mainDisplay');
+        t.style.background = 'rgba(0,122,255,0.3)';
+        setTimeout(() => { t.style.background = 'transparent'; }, 500);
+    } else {
+        // Just mock cursor interaction
+        let t = document.getElementById('mainDisplay');
+        t.style.opacity = '0.5'; setTimeout(() => t.style.opacity = '1', 50);
+    }
+}
+
+function setKeyboardHeight(size) {
+    let keys = document.querySelectorAll('.key');
+    let specialKeys = document.querySelectorAll('.key-special');
+    let returnKey = document.querySelector('.key-return');
+    let rows = document.querySelectorAll('.keyboard-row');
+    
+    // reset selection highlighted state
+    ['tall', 'normal', 'short'].forEach(s => {
+        let btn = document.getElementById('btn-size-' + s);
+        btn.style.borderColor = 'transparent';
+        btn.style.background = '#252527';
+    });
+    
+    let activeBtn = document.getElementById('btn-size-' + size);
+    activeBtn.style.borderColor = '#007aff';
+    activeBtn.style.background = 'rgba(0,122,255,0.15)';
+
+    // Transition styles explicitly applied
+    keys.forEach(k => { k.style.transition = 'height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.1s;'; });
+    specialKeys.forEach(k => { k.style.transition = 'height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.1s;'; });
+    if(returnKey) returnKey.style.transition = 'height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.1s;';
+    rows.forEach(r => { r.style.transition = 'margin-bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; });
+
+    let h, m;
+    if (size === 'short') { h = '36px'; m = '8px'; }
+    else if (size === 'tall') { h = '58px'; m = '16px'; }
+    else { h = '45px'; m = '12px'; } // normal
+
+    keys.forEach(k => { k.style.height = h; k.style.lineHeight = h; });
+    specialKeys.forEach(k => { k.style.height = h; });
+    rows.forEach(r => r.style.marginBottom = m);
+    
+    // Delay slightly to confirm click, then apply beautifully
+    setTimeout(() => { closeOverlays(); }, 350);
+}
+</script>
+
+</body>
+</html>

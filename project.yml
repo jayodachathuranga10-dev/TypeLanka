@@ -1,0 +1,37 @@
+name: TypeLanka
+options:
+  bundleIdPrefix: com.example
+targets:
+  TypeLankaApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: TypeLankaApp
+    info:
+      path: TypeLankaApp/Info.plist
+      properties:
+        CFBundleIcons: 
+          CFBundlePrimaryIcon: 
+            CFBundleIconFiles: 
+              - AppIcon
+        UILaunchStoryboardName: LaunchScreen
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations: {}
+
+  TypeLankaKeyboard:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: TypeLankaKeyboard
+    info:
+      path: TypeLankaKeyboard/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionAttributes:
+            IsASCIICapable: false
+            PrefersRightToLeft: false
+            PrimaryLanguage: en-US
+            RequestsOpenAccess: true
+          NSExtensionPointIdentifier: com.apple.keyboard-service
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"
