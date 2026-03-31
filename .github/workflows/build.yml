@@ -45,29 +45,47 @@ jobs:
         name: Build-Log
         path: build_log.txt
 
-    - name: Debug Build Output
+    - name: Inspect Build Output
       run: |
-        echo "=== Build Directory ==="
-        ls -la build/Release-iphoneos/ || echo "Build dir not found!"
+        echo "=== EVERYTHING IN build/ ==="
+        find build/ -type f | sort | head -50
         echo ""
-        echo "=== FlashboardApp.app contents ==="
-        ls -la "build/Release-iphoneos/FlashboardApp.app/" || echo "App not found!"
+        echo "=== APP SIZE ==="
+        du -sh "build/Release-iphoneos/FlashboardApp.app" 2>/dev/null || echo "APP NOT FOUND!"
         echo ""
-        echo "=== PlugIns folder ==="
-        ls -la "build/Release-iphoneos/FlashboardApp.app/PlugIns/" || echo "NO PLUGINS FOLDER!"
+        echo "=== KEYBOARD EXTENSION SIZE ==="
+        du -sh "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex" 2>/dev/null || echo "EXTENSION NOT IN APP!"
+        du -sh "build/Release-iphoneos/FlashboardKeyboard.appex" 2>/dev/null || echo "STANDALONE EXTENSION NOT FOUND!"
+        echo ""
+        echo "=== FULL APP TREE ==="
+        find "build/Release-iphoneos/FlashboardApp.app" -type f | sort
 
     - name: Create IPA Payload
       run: |
         mkdir -p Payload
         cp -R "build/Release-iphoneos/FlashboardApp.app" Payload/
-        echo "=== PlugIns in Payload ==="
-        ls -la "Payload/FlashboardApp.app/PlugIns/" || echo "NO PLUGINS!"
+        echo "=== PAYLOAD TREE ==="
+        find Payload/ -type f | sort
+        echo ""
+        echo "=== PAYLOAD SIZE ==="
+        du -sh Payload/
         zip -r Flashboard.ipa Payload
-        echo "=== IPA size ==="
+        echo ""
+        echo "=== IPA SIZE ==="
         du -sh Flashboard.ipa
+        echo ""
+        echo "=== IPA CONTENTS ==="
+        unzip -l Flashboard.ipa
 
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Flashboard-Keyboard-App
         path: Flashboard.ipa
+
+    - name: Upload Inspect Log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Inspect-Log
+        path: build_log.txt
