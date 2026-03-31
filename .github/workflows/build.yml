@@ -12,31 +12,28 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Debug files (Just in case)
-      run: ls -la
-
     - name: Install XcodeGen
       run: brew install xcodegen
 
     - name: Generate Xcode Project
       run: xcodegen generate
 
-    - name: Build and Archive
+    - name: Build App Payload
       run: |
-        xcodebuild archive \
+        xcodebuild build \
           -project TypeLanka.xcodeproj \
           -scheme TypeLankaApp \
           -configuration Release \
           -destination 'generic/platform=iOS' \
-          -archivePath TypeLankaApp.xcarchive \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO \
+          CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos"
 
-    - name: Export Unsigned IPA Payload
+    - name: Create IPA
       run: |
         mkdir -p Payload
-        cp -R TypeLankaApp.xcarchive/Products/Applications/TypeLankaApp.app Payload/
+        cp -R build/Release-iphoneos/TypeLankaApp.app Payload/
         zip -r TypeLankaKeyboard.ipa Payload
 
     - name: Upload IPA Artifact
