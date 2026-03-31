@@ -10,6 +10,9 @@ targets:
     bundleId: com.example.FlashboardApp
     dependencies:
       - target: FlashboardKeyboard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlashboardApp
     info:
       path: FlashboardApp/Info.plist
       properties:
@@ -28,9 +31,13 @@ targets:
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
     bundleId: com.example.FlashboardApp.FlashboardKeyboard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlashboardApp.FlashboardKeyboard
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         NSExtension:
           NSExtensionAttributes:
             IsASCIICapable: false
