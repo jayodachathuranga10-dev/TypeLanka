@@ -1,0 +1,46 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Select Xcode Version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode Project
+      run: xcodegen generate
+
+    - name: Build and Archive
+      run: |
+        xcodebuild archive \
+          -project TypeLanka.xcodeproj \
+          -scheme TypeLankaApp \
+          -configuration Release \
+          -destination 'generic/platform=iOS' \
+          -archivePath TypeLankaApp.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Export Unsigned IPA Payload
+      run: |
+        mkdir -p Payload
+        cp -R TypeLankaApp.xcarchive/Products/Applications/TypeLankaApp.app Payload/
+        zip -r TypeLankaKeyboard.ipa Payload
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TypeLanka-Keyboard-App
+        path: TypeLankaKeyboard.ipa
