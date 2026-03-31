@@ -12,18 +12,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install XcodeGen
-      run: brew install xcodegen
+    - name: Install Dependencies
+      run: |
+        brew install xcodegen
+        brew install ldid
 
     - name: Generate Xcode Project
       run: xcodegen generate
 
-    - name: Create Ad-Hoc Sign Configuration
+    - name: Create No-Sign Configuration
       run: |
-        echo "CODE_SIGNING_ALLOWED = YES" > ad-hoc.xcconfig
-        echo "CODE_SIGNING_REQUIRED = YES" >> ad-hoc.xcconfig
-        echo "CODE_SIGN_IDENTITY = -" >> ad-hoc.xcconfig
-        echo "ENABLE_BITCODE = NO" >> ad-hoc.xcconfig
+        echo "CODE_SIGNING_ALLOWED = NO" > no-sign.xcconfig
+        echo "CODE_SIGNING_REQUIRED = NO" >> no-sign.xcconfig
+        echo "CODE_SIGN_IDENTITY = " >> no-sign.xcconfig
+        echo "ENABLE_BITCODE = NO" >> no-sign.xcconfig
 
     - name: Build App and Extension
       run: |
@@ -32,7 +34,7 @@ jobs:
           -scheme FlashboardApp \
           -configuration Release \
           -destination 'generic/platform=iOS' \
-          -xcconfig ad-hoc.xcconfig \
+          -xcconfig no-sign.xcconfig \
           -sdk iphoneos \
           CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos" \
           2>&1 | tee build_log.txt
@@ -45,47 +47,22 @@ jobs:
         name: Build-Log
         path: build_log.txt
 
-    - name: Inspect Build Output
+    - name: Ad-Hoc Sign with ldid
       run: |
-        echo "=== EVERYTHING IN build/ ==="
-        find build/ -type f | sort | head -50
-        echo ""
-        echo "=== APP SIZE ==="
-        du -sh "build/Release-iphoneos/FlashboardApp.app" 2>/dev/null || echo "APP NOT FOUND!"
-        echo ""
-        echo "=== KEYBOARD EXTENSION SIZE ==="
-        du -sh "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex" 2>/dev/null || echo "EXTENSION NOT IN APP!"
-        du -sh "build/Release-iphoneos/FlashboardKeyboard.appex" 2>/dev/null || echo "STANDALONE EXTENSION NOT FOUND!"
-        echo ""
-        echo "=== FULL APP TREE ==="
-        find "build/Release-iphoneos/FlashboardApp.app" -type f | sort
+        echo "Fakesigning the extension..."
+        ldid -S "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex"
+        
+        echo "Fakesigning the main app..."
+        ldid -S "build/Release-iphoneos/FlashboardApp.app"
 
     - name: Create IPA Payload
       run: |
         mkdir -p Payload
         cp -R "build/Release-iphoneos/FlashboardApp.app" Payload/
-        echo "=== PAYLOAD TREE ==="
-        find Payload/ -type f | sort
-        echo ""
-        echo "=== PAYLOAD SIZE ==="
-        du -sh Payload/
         zip -r Flashboard.ipa Payload
-        echo ""
-        echo "=== IPA SIZE ==="
-        du -sh Flashboard.ipa
-        echo ""
-        echo "=== IPA CONTENTS ==="
-        unzip -l Flashboard.ipa
 
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Flashboard-Keyboard-App
         path: Flashboard.ipa
-
-    - name: Upload Inspect Log
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Inspect-Log
-        path: build_log.txt
