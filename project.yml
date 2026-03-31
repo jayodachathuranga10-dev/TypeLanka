@@ -1,18 +1,18 @@
-name: TypeLanka
+name: Flashboard
 options:
   bundleIdPrefix: com.example
   xcodeVersion: "15.0"
 targets:
-  TypeLankaApp:
+  FlashboardApp:
     type: application
     platform: iOS
     deploymentTarget: "15.0"
-    sources: TypeLankaApp
-    bundleId: com.example.TypeLankaApp
+    sources: FlashboardApp
+    bundleId: com.example.FlashboardApp
     dependencies:
-      - target: TypeLankaKeyboard # <--- THIS LINKS THEM!
+      - target: FlashboardKeyboard
     info:
-      path: TypeLankaApp/Info.plist
+      path: FlashboardApp/Info.plist
       properties:
         CFBundleIcons: 
           CFBundlePrimaryIcon: 
@@ -23,14 +23,14 @@ targets:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations: {}
 
-  TypeLankaKeyboard:
+  FlashboardKeyboard:
     type: app-extension
     platform: iOS
     deploymentTarget: "15.0"
-    sources: TypeLankaKeyboard
-    bundleId: com.example.TypeLankaApp.TypeLankaKeyboard # <--- MUST MATCH PARENT!
+    sources: FlashboardKeyboard
+    bundleId: com.example.FlashboardApp.FlashboardKeyboard
     info:
-      path: TypeLankaKeyboard/Info.plist
+      path: FlashboardKeyboard/Info.plist
       properties:
         NSExtension:
           NSExtensionAttributes:
