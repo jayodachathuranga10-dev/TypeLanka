@@ -25,12 +25,8 @@ jobs:
         echo "CODE_SIGN_IDENTITY = " >> no-sign.xcconfig
         echo "ENABLE_BITCODE = NO" >> no-sign.xcconfig
 
-    - name: Show Swift Files
-      run: find . -name "*.swift" -not -path "./.git/*"
-
     - name: Build App and Extension
       run: |
-        set -o pipefail
         xcodebuild build \
           -project Flashboard.xcodeproj \
           -scheme FlashboardApp \
@@ -39,11 +35,15 @@ jobs:
           -xcconfig no-sign.xcconfig \
           -sdk iphoneos \
           CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos" \
-          2>&1 | tee build_output.txt
-        
-    - name: Show Errors
-      if: failure()
-      run: grep "error:" build_output.txt || echo "No error lines found"
+          2>&1 | tee build_log.txt
+        exit ${PIPESTATUS[0]}
+
+    - name: Upload Build Log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build-Log
+        path: build_log.txt
 
     - name: Create IPA Payload
       run: |
