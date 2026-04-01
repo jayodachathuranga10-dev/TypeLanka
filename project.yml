@@ -1,19 +1,18 @@
 name: Flashboard
 options:
-  {} # Removed bundleIdPrefix to prevent conflicts
+  {} # Stability Reset v7.0
 targets:
   FlashboardApp:
     type: application
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardApp
-    bundleId: com.flash.lanka.v5
+    bundleId: com.flash.lanka.v7
     dependencies:
       - target: FlashboardKeyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v5
-        CODE_SIGN_ENTITLEMENTS: FlashboardApp/FlashboardApp.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v7
     info:
       path: FlashboardApp/Info.plist
       properties:
@@ -31,11 +30,12 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
-    bundleId: com.flash.lanka.v5.keyboard
+    bundleId: com.flash.lanka.v7.keyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v5.keyboard
-        CODE_SIGN_ENTITLEMENTS: FlashboardKeyboard/FlashboardKeyboard.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v7.keyboard
+        ENABLE_BITCODE: NO
+        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
@@ -48,8 +48,3 @@ targets:
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: "KeyboardViewController"
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v5.keyboard
-        CODE_SIGN_ENTITLEMENTS: FlashboardKeyboard/FlashboardKeyboard.entitlements
-        ENABLE_BITCODE: NO
-        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES

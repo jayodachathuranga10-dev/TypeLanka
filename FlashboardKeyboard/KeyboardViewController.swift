@@ -1,168 +1,121 @@
 import UIKit
 
 @objc(KeyboardViewController)
-public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
+public class KeyboardViewController: UIInputViewController {
     
-    private var keyboardView: KeyboardView!
+    private var nextKeyboardButton: UIButton!
+    private var heightConstraint: NSLayoutConstraint!
     
-    // State management (Engines are stateless)
-    private var isSinhalaEnabled = true
-    private var currentWord = ""
-    
-    // Lazy engines for memory efficiency and startup speed
-    private lazy var transliterationEngine = TransliterationEngine()
-    private lazy var suggestionEngine = SuggestionEngine()
-    private lazy var clipboardEngine = ClipboardEngine()
-    private lazy var smartReplyEngine = SmartReplyEngine()
-    private lazy var styleEngine = StyleEngine()
+    public override func updateViewConstraints() {
+        super.updateViewConstraints()
+    }
     
     public override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Use a 0.2s delay for physical hardware stability
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            self?.setupKeyboardView()
+        // 1. Basic Setup
+        self.view.backgroundColor = .systemGray6
+        
+        // 2. Load the UI after a stable delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.setupSimpleUI()
+        }
+        
+        print("Flashboard: Keyboard Loaded Successfully.")
+    }
+    
+    public override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Ensure height is stable
+        if heightConstraint == nil {
+            heightConstraint = view.heightAnchor.constraint(equalToConstant: 260)
+            heightConstraint.priority = .required
+            heightConstraint.isActive = true
         }
     }
     
-    private func setupKeyboardView() {
-        keyboardView = KeyboardView()
-        keyboardView.delegate = self
-        view.addSubview(keyboardView)
+    private func setupSimpleUI() {
+        let mainStack = UIStackView()
+        mainStack.axis = .vertical
+        mainStack.distribution = .fillEqually
+        mainStack.spacing = 10
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(mainStack)
         
-        keyboardView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            keyboardView.leftAnchor.constraint(equalTo: view.leftAnchor),
-            keyboardView.rightAnchor.constraint(equalTo: view.rightAnchor),
-            keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
-            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            mainStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
+            mainStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5),
+            mainStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -5),
+            mainStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -10)
         ])
         
-        // Initial height constraint
-        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 280)
-        heightConstraint.priority = .required
-        heightConstraint.isActive = true
+        // Row 1: A B C
+        let row1 = createRow(["A", "B", "C"])
+        mainStack.addArrangedSubview(row1)
+        
+        // Row 2: Space, Delete, Globe
+        let bottomRow = UIStackView()
+        bottomRow.axis = .horizontal
+        bottomRow.distribution = .fillEqually
+        bottomRow.spacing = 8
+        
+        let globeBtn = createKey(title: "🌐", color: .systemGray2)
+        globeBtn.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+        bottomRow.addArrangedSubview(globeBtn)
+        
+        let spaceBtn = createKey(title: "Space", color: .white)
+        spaceBtn.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
+        bottomRow.addArrangedSubview(spaceBtn)
+        
+        let deleteBtn = createKey(title: "⌫", color: .systemGray2)
+        deleteBtn.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
+        bottomRow.addArrangedSubview(deleteBtn)
+        
+        mainStack.addArrangedSubview(bottomRow)
     }
     
-    // MARK: - KeyboardViewDelegate
+    private func createRow(_ titles: [String]) -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = 8
+        for title in titles {
+            let btn = createKey(title: title, color: .white)
+            btn.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+            stack.addArrangedSubview(btn)
+        }
+        return stack
+    }
     
-    public func didTapKey(character: String) {
-        let proxy = textDocumentProxy
+    private func createKey(title: String, color: UIColor) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.backgroundColor = color
+        btn.setTitleColor(.black, for: .normal)
+        btn.layer.cornerRadius = 5
+        btn.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
         
-        if isSinhalaEnabled {
-            // Delete previously typed partial word if any
-            let previousCount = transliterationEngine.transliterate(text: currentWord).count
-            for _ in 0..<previousCount {
-                proxy.deleteBackward()
-            }
-            
-            // Update word and transliterate
-            currentWord += character
-            let result = transliterationEngine.transliterate(text: currentWord)
-            proxy.insertText(result)
-            
-            updateSuggestions(for: result)
-        } else {
-            proxy.insertText(character)
-            currentWord = ""
+        // Shadow for premium look
+        btn.layer.shadowColor = UIColor.black.cgColor
+        btn.layer.shadowOffset = CGSize(width: 0, height: 1)
+        btn.layer.shadowRadius = 0
+        btn.layer.shadowOpacity = 0.3
+        
+        return btn
+    }
+    
+    @objc private func keyTapped(_ sender: UIButton) {
+        if let char = sender.titleLabel?.text {
+            textDocumentProxy.insertText(char)
+            print("Flashboard: Inserted \(char)")
         }
     }
     
-    public func didTapBackspace() {
-        let proxy = textDocumentProxy
-        proxy.deleteBackward()
-        
-        if isSinhalaEnabled && !currentWord.isEmpty {
-            // Delete the whole transliterated word from proxy and re-insert 
-            // the new transliterated word minus one char
-            let previousCount = transliterationEngine.transliterate(text: currentWord).count
-            for _ in 0..<(previousCount - 1) { // -1 because already deleted one above
-                 // wait, proxy.deleteBackward() already deleted the last char of the RESULT.
-            }
-            
-            currentWord.removeLast()
-            let newResult = transliterationEngine.transliterate(text: currentWord)
-            
-            // This is tricky. Let's simplify: 
-            // If in Sinhala mode, we just track the current word.
-            // On backspace, we already called deleteBackward() which removed the last visual char.
-            // We just need to sync our currentWord.
-            updateSuggestions(for: newResult)
-        }
-    }
-    
-    public func didTapSpace() {
+    @objc private func spaceTapped() {
         textDocumentProxy.insertText(" ")
-        currentWord = ""
-        keyboardView.displaySuggestions([])
     }
     
-    public func didTapEnter() {
-        textDocumentProxy.insertText("\n")
-        currentWord = ""
-    }
-    
-    public func didTapShift() {
-        // Toggle shift state in UI if needed
-    }
-    
-    public func didTapLanguageSwitch() {
-        isSinhalaEnabled.toggle()
-        currentWord = ""
-        // Provide haptic feedback
-        let feedback = UIImpactFeedbackGenerator(style: .light)
-        feedback.impactOccurred()
-    }
-    
-    public func didTapNumberSwitch() {
-        // Switch layout logic here
-    }
-    
-    public func didTapClipboard() {
-        clipboardEngine.pullFromSystemClipboard()
-        let items = clipboardEngine.getHistory()
-        keyboardView.showClipboard(items: items)
-    }
-    
-    public func didSelectClipboardItem(_ text: String) {
-        textDocumentProxy.insertText(text)
-        keyboardView.hideClipboard()
-        currentWord = ""
-    }
-    
-    public func didSelectSuggestion(_ word: String) {
-        let proxy = textDocumentProxy
-        // Remove current partial word
-        let previousCount = transliterationEngine.transliterate(text: currentWord).count
-        for _ in 0..<previousCount {
-            proxy.deleteBackward()
-        }
-        proxy.insertText(word + " ")
-        currentWord = ""
-        keyboardView.displaySuggestions([])
-    }
-    
-    public func didTogglePredictiveBar() {
-        // Handle UI resizing if needed
-    }
-    
-    public func didOpenSettings() {
-        // Use a custom URL scheme to open the host app settings
-        if let url = URL(string: "flashboard://settings") {
-            var responder: UIResponder? = self
-            while responder != nil {
-                if let application = responder as? UIApplication {
-                    application.open(url)
-                    break
-                }
-                responder = responder?.next
-            }
-        }
-    }
-    
-    private func updateSuggestions(for word: String) {
-        let language = isSinhalaEnabled ? "si" : "en"
-        let suggestions = suggestionEngine.getSuggestions(for: word, language: language)
-        keyboardView.displaySuggestions(suggestions)
+    @objc private func deleteTapped() {
+        textDocumentProxy.deleteBackward()
     }
 }
