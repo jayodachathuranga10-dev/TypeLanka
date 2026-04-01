@@ -30,10 +30,10 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
-    bundleId: com.flash.lanka.keyboard.v3
+    bundleId: com.flash.lanka.v3.keyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.keyboard.v3
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v3.keyboard
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
