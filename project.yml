@@ -1,4 +1,4 @@
-﻿name: Flashboard
+name: Flashboard
 options:
   bundleIdPrefix: com.example
 targets:
@@ -37,6 +37,7 @@ targets:
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
+        CFBundleDisplayName: Flashboard
         CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         NSExtension:
           NSExtensionAttributes:
