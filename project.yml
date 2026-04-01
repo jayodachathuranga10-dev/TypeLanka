@@ -1,18 +1,18 @@
 name: Flashboard
 options:
-  {} # FINAL v7.1 STABILITY
+  {} # Strict Rebuild v9.0
 targets:
   FlashboardApp:
     type: application
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardApp
-    bundleId: com.flash.lanka.v7
+    bundleId: com.flash.lanka.v9
     dependencies:
       - target: FlashboardKeyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v7
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v9
     info:
       path: FlashboardApp/Info.plist
       properties:
@@ -30,10 +30,10 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
-    bundleId: com.flash.lanka.v7.keyboard
+    bundleId: com.flash.lanka.v9.keyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v7.keyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v9.keyboard
         ENABLE_BITCODE: NO
         ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
     info:
@@ -44,7 +44,7 @@ targets:
           NSExtensionAttributes:
             IsASCIICapable: false
             PrefersRightToLeft: false
-            PrimaryLanguage: en-US
+            PrimaryLanguage: si-LK
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
-          NSExtensionPrincipalClass: "KeyboardViewController"
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"

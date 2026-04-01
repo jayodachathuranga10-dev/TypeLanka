@@ -1,62 +1,64 @@
 import UIKit
 
-@objc(KeyboardViewController)
 public class KeyboardViewController: UIInputViewController {
     
     // UI Elements
-    private var mainStack: UIStackView!
-    private var heightConstraint: NSLayoutConstraint!
+    private var mainStack: UIStackView?
+    private var heightConstraint: NSLayoutConstraint?
     
     public override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // 1. Instant Background Setup
         self.view.backgroundColor = UIColor(white: 0.1, alpha: 1.0)
         
-        // Load UI after a safe system handshake delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.setupKeyboardUI()
-        }
+        // 2. Instant UI Setup (No Delay)
+        setupKeyboardUI()
         
-        print("KEYBOARD LOADED ✅")
+        print("KEYBOARD LOADED")
     }
     
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // Force the keyboard height to be stable at 280px
+        
+        // 3. Perfect Height (High Priority, not Required for better OS flexibility)
         if heightConstraint == nil {
-            heightConstraint = view.heightAnchor.constraint(equalToConstant: 280)
-            heightConstraint.priority = .required
-            heightConstraint.isActive = true
+            let h = view.heightAnchor.constraint(equalToConstant: 280)
+            h.priority = UILayoutPriority(999) // High but not required
+            h.isActive = true
+            heightConstraint = h
         }
     }
     
     // MARK: - UI Construction
     
     private func setupKeyboardUI() {
-        mainStack = UIStackView()
-        mainStack.axis = .vertical
-        mainStack.distribution = .fillEqually
-        mainStack.spacing = 8
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(mainStack)
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.distribution = .fillEqually
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+        mainStack = stack
         
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
-            mainStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
-            mainStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            mainStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8)
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
+            stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8)
         ])
         
-        // Row 1: Sinhala Common Vowels
+        // Row 1: Sinhala Vowels
         let row1 = createRow(["අ", "ආ", "ඇ", "ඈ", "ඉ", "ඊ", "උ"])
-        mainStack.addArrangedSubview(row1)
+        stack.addArrangedSubview(row1)
         
         // Row 2: Common Consonants
         let row2 = createRow(["ක", "ග", "ච", "ජ", "ට", "ඩ", "ණ"])
-        mainStack.addArrangedSubview(row2)
+        stack.addArrangedSubview(row2)
         
         // Row 3: More Consonants
         let row3 = createRow(["ත", "ද", "න", "ප", "බ", "ම", "ය"])
-        mainStack.addArrangedSubview(row3)
+        stack.addArrangedSubview(row3)
         
         // Row 4: Controls (Globe, Space, Delete)
         let controlRow = UIStackView()
@@ -78,7 +80,7 @@ public class KeyboardViewController: UIInputViewController {
         deleteBtn.addTarget(self, action: #selector(didTapDelete), for: .touchUpInside)
         controlRow.addArrangedSubview(deleteBtn)
         
-        mainStack.addArrangedSubview(controlRow)
+        stack.addArrangedSubview(controlRow)
     }
     
     private func createRow(_ characters: [String]) -> UIStackView {
@@ -102,7 +104,7 @@ public class KeyboardViewController: UIInputViewController {
         btn.layer.cornerRadius = 6
         btn.titleLabel?.font = .systemFont(ofSize: 22, weight: .regular)
         
-        // Shadow (iOS Style)
+        // Shadows are safe and premium
         btn.layer.shadowColor = UIColor.black.cgColor
         btn.layer.shadowOffset = CGSize(width: 0, height: 1.5)
         btn.layer.shadowRadius = 0

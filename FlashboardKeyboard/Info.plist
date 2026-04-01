@@ -29,14 +29,14 @@
             <key>PrefersRightToLeft</key>
             <false/>
             <key>PrimaryLanguage</key>
-            <string>en-US</string>
+            <string>si-LK</string>
             <key>RequestsOpenAccess</key>
             <true/>
         </dict>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.keyboard-service</string>
         <key>NSExtensionPrincipalClass</key>
-        <string>KeyboardViewController</string>
+        <string>$(PRODUCT_MODULE_NAME).KeyboardViewController</string>
     </dict>
 </dict>
 </plist>
