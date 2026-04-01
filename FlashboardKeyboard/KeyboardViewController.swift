@@ -1,6 +1,5 @@
 import UIKit
 
-@objc(KeyboardViewController)
 class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     var customKeyboardView: KeyboardView!
@@ -17,6 +16,15 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Final Diagnostic Strategy: Delay the UI load to ensure iOS extension process is stable.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.setupDiagnosticUI()
+        }
+    }
+    
+    private func setupDiagnosticUI() {
+        guard customKeyboardView == nil else { return }
+        
         customKeyboardView = KeyboardView()
         customKeyboardView.delegate = self
         view.addSubview(customKeyboardView)
@@ -32,6 +40,7 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
         
         updateSuggestions()
     }
+
     
     override func textDidChange(_ textInput: UITextInput?) {
         guard customKeyboardView != nil else { return }
