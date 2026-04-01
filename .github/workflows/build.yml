@@ -49,10 +49,12 @@ jobs:
 
     - name: Ad-Hoc Sign with ldid
       run: |
-        echo "Fakesigning the extension binaries recursively..."
-        find "build/Release-iphoneos/FlashboardApp.app/PlugIns" -type f -exec ldid -S {} +
+        echo "Fakesigning the extension binaries..."
+        ldid -S "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex/FlashboardKeyboard"
+        ldid -S "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex"
         
-        echo "Fakesigning the main app..."
+        echo "Fakesigning the main app binary..."
+        ldid -S "build/Release-iphoneos/FlashboardApp.app/FlashboardApp"
         ldid -S "build/Release-iphoneos/FlashboardApp.app"
 
     - name: Create IPA Payload
