@@ -2,152 +2,136 @@ import UIKit
 
 public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
-    var customKeyboardView: KeyboardView!
+    private var keyboardView: KeyboardView!
     
-    let transliterationEngine = TransliterationEngine()
-    let suggestionEngine = SuggestionEngine()
-    let smartReplyEngine = SmartReplyEngine()
-    let clipboardEngine = ClipboardEngine()
+    // Lazy engines for memory efficiency and startup speed
+    private lazy var transliterationEngine = TransliterationEngine()
+    private lazy var suggestionEngine = SuggestionEngine()
+    private lazy var clipboardEngine = ClipboardEngine()
+    private lazy var smartReplyEngine = SmartReplyEngine()
+    private lazy var styleEngine = StyleEngine()
     
-    var isSinhalaMode = true
-    var currentWord = ""
-    var isPredictiveToolbarVisible = false
-    
-    override public func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         
-        customKeyboardView = KeyboardView()
-        customKeyboardView.delegate = self
-        view.addSubview(customKeyboardView)
-        
-        customKeyboardView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            customKeyboardView.leftAnchor.constraint(equalTo: view.leftAnchor),
-            customKeyboardView.rightAnchor.constraint(equalTo: view.rightAnchor),
-            customKeyboardView.topAnchor.constraint(equalTo: view.topAnchor),
-            customKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        
-        updateSuggestions()
-    }
-    
-    override public func textDidChange(_ textInput: UITextInput?) {
-        // We override iOS's light/dark mode if the user sets an explicit theme in our Settings
-        // However, if they have "Auto", we could sync it here.
-        customKeyboardView.updateTheme()
-        
-        if currentWord.isEmpty {
-            if let context = textDocumentProxy.documentContextBeforeInput,
-               let replies = smartReplyEngine.generateReplies(context: context) {
-                customKeyboardView.displaySuggestions(replies)
-                return
-            }
+        // Use a small delay to ensure the system is ready for our UI
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.setupKeyboardView()
         }
     }
     
+    private func setupKeyboardView() {
+        keyboardView = KeyboardView()
+        keyboardView.delegate = self
+        view.addSubview(keyboardView)
+        
+        keyboardView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            keyboardView.leftAnchor.constraint(equalTo: view.leftAnchor),
+            keyboardView.rightAnchor.constraint(equalTo: view.rightAnchor),
+            keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
+            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        // Initial height constraint
+        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 280)
+        heightConstraint.priority = .required
+        heightConstraint.isActive = true
+    }
+    
+    // MARK: - KeyboardViewDelegate
+    
     public func didTapKey(character: String) {
-        currentWord += character
-        if isSinhalaMode {
-            let transliterated = transliterationEngine.transliterate(text: currentWord)
-            customKeyboardView.displaySuggestions([transliterated] + suggestionEngine.getSuggestions(for: currentWord, language: "si"))
+        let proxy = textDocumentProxy
+        
+        if transliterationEngine.isSinhalaEnabled {
+            let result = transliterationEngine.process(character)
+            proxy.insertText(result)
+            updateSuggestions(for: transliterationEngine.currentWord)
         } else {
-            customKeyboardView.displaySuggestions(suggestionEngine.getSuggestions(for: currentWord, language: "en"))
+            proxy.insertText(character)
         }
     }
     
     public func didTapBackspace() {
-        if !currentWord.isEmpty {
-            currentWord.removeLast()
-            updateSuggestions()
-        } else {
-            textDocumentProxy.deleteBackward()
+        textDocumentProxy.deleteBackward()
+        if transliterationEngine.isSinhalaEnabled {
+            transliterationEngine.backspace()
+            updateSuggestions(for: transliterationEngine.currentWord)
         }
     }
     
     public func didTapSpace() {
-        commitCurrentWord()
         textDocumentProxy.insertText(" ")
+        transliterationEngine.resetWord()
+        keyboardView.displaySuggestions([])
     }
     
     public func didTapEnter() {
-        commitCurrentWord()
         textDocumentProxy.insertText("\n")
+        transliterationEngine.resetWord()
     }
     
     public func didTapShift() {
-        // Shift logic not fully implemented for space/simplicity
+        // Toggle shift state in UI if needed
     }
     
     public func didTapLanguageSwitch() {
-        isSinhalaMode.toggle()
-        updateSuggestions()
+        transliterationEngine.isSinhalaEnabled.toggle()
+        // Provide haptic feedback
+        let feedback = UIImpactFeedbackGenerator(style: .light)
+        feedback.impactOccurred()
     }
     
     public func didTapNumberSwitch() {
-        // Number layout not fully implemented
+        // Switch layout logic here
     }
     
     public func didTapClipboard() {
-        // Fetch new item if exists
-        clipboardEngine.pullFromSystemClipboard()
-        // Display full history in overlay
-        let history = clipboardEngine.getHistory()
-        customKeyboardView.showClipboard(items: history)
+        let items = clipboardEngine.getHistory()
+        keyboardView.showClipboard(items: items)
     }
     
     public func didSelectClipboardItem(_ text: String) {
         textDocumentProxy.insertText(text)
-        customKeyboardView.hideClipboard()
+        keyboardView.hideClipboard()
     }
     
     public func didSelectSuggestion(_ word: String) {
-        suggestionEngine.recordWord(word: word)
-        textDocumentProxy.insertText(word)
-        textDocumentProxy.insertText(" ")
-        currentWord = ""
-        updateSuggestions()
-    }
-    
-    private func updateSuggestions() {
-        if isSinhalaMode && !currentWord.isEmpty {
-            let transliterated = transliterationEngine.transliterate(text: currentWord)
-            customKeyboardView.displaySuggestions([transliterated])
-        } else {
-            customKeyboardView.displaySuggestions([])
+        let proxy = textDocumentProxy
+        // Remove current partial word
+        for _ in 0..<transliterationEngine.currentWord.count {
+            proxy.deleteBackward()
         }
-    }
-    
-    private func commitCurrentWord() {
-        if !currentWord.isEmpty {
-            let finalWord = isSinhalaMode ? transliterationEngine.transliterate(text: currentWord) : currentWord
-            suggestionEngine.recordWord(word: finalWord)
-            textDocumentProxy.insertText(finalWord)
-            currentWord = ""
-            updateSuggestions()
-        }
-    }
-    
-    // MARK: - New Delegate Methods
-    
-    public func didOpenSettings() {
-        // Cycle active themes for testing directly from the keyboard view without needing a host app
-        let themes = ThemeManager.shared.themes
-        let currentID = ThemeManager.shared.activeTheme.id
-        let currentIndex = themes.firstIndex(where: { $0.id == currentID }) ?? 1
-        let nextIndex = (currentIndex + 1) % themes.count
-        
-        ThemeManager.shared.setActiveTheme(id: themes[nextIndex].id)
-        customKeyboardView.updateTheme()
-        customKeyboardView.setNeedsLayout()
+        proxy.insertText(word + " ")
+        transliterationEngine.resetWord()
+        keyboardView.displaySuggestions([])
     }
     
     public func didTogglePredictiveBar() {
-        // In a complete implementation, this would animate a height constraint.
-        isPredictiveToolbarVisible.toggle()
-        if isPredictiveToolbarVisible {
-            updateSuggestions()
-        } else {
-            customKeyboardView.displaySuggestions([])
+        // Handle UI resizing if needed
+    }
+    
+    public func didOpenSettings() {
+        // Use a custom URL scheme to open the host app settings
+        if let url = URL(string: "flashboard://settings") {
+            var responder: UIResponder? = self
+            while responder != nil {
+                if let application = responder as? UIApplication {
+                    application.open(url)
+                    break
+                }
+                responder = responder?.next
+            }
         }
+    }
+    
+    private func updateSuggestions(for word: String) {
+        guard !word.isEmpty else {
+            keyboardView.displaySuggestions([])
+            return
+        }
+        let suggestions = suggestionEngine.getSuggestions(for: word)
+        keyboardView.displaySuggestions(suggestions)
     }
 }
