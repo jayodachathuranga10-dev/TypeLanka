@@ -1,6 +1,6 @@
 name: Flashboard
 options:
-  {} # Stability Reset v7.0
+  {} # FINAL v7.1 STABILITY
 targets:
   FlashboardApp:
     type: application
