@@ -47,4 +47,4 @@ targets:
             PrimaryLanguage: en-US
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
-          NSExtensionPrincipalClass: "InputViewController"
+          NSExtensionPrincipalClass: "KeyboardViewController"

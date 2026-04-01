@@ -1,7 +1,7 @@
 import UIKit
 
-@objc(InputViewController)
-class InputViewController: UIInputViewController {
+@objc(KeyboardViewController)
+public class KeyboardViewController: UIInputViewController {
     
     // UI Elements
     private var mainStack: UIStackView!
