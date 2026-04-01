@@ -25,9 +25,27 @@ jobs:
         echo "CODE_SIGNING_ALLOWED = NO" > no-sign.xcconfig
         echo "CODE_SIGNING_REQUIRED = NO" >> no-sign.xcconfig
         echo "CODE_SIGN_IDENTITY = " >> no-sign.xcconfig
-        echo "ENABLE_BITCODE = NO" >> no-sign.xcconfig
+        # Bitcode is often required for extensions or app bundles in some iOS versions
+        echo "ENABLE_BITCODE = YES" >> no-sign.xcconfig
 
-    - name: Build for Phone (iphoneos)
+    - name: Build for Simulator (For Appetize)
+      run: |
+        xcodebuild build \
+          -project Flashboard.xcodeproj \
+          -scheme FlashboardApp \
+          -configuration Debug \
+          -destination 'generic/platform=iOS Simulator' \
+          -xcconfig no-sign.xcconfig \
+          -sdk iphonesimulator \
+          CONFIGURATION_BUILD_DIR="$(PWD)/build/Debug-iphonesimulator"
+
+    - name: Package Simulator Build
+      run: |
+        # Zip the .app for Appetize
+        cd build/Debug-iphonesimulator
+        zip -r ../../Flashboard-Simulator.zip FlashboardApp.app
+
+    - name: Build for Device (For IPA)
       run: |
         xcodebuild build \
           -project Flashboard.xcodeproj \
@@ -36,42 +54,30 @@ jobs:
           -destination 'generic/platform=iOS' \
           -xcconfig no-sign.xcconfig \
           -sdk iphoneos \
-          CONFIGURATION_BUILD_DIR="$(PWD)/build/iphoneos"
- 
-    - name: Build for Simulator (iphonesimulator)
-      run: |
-        xcodebuild build \
-          -project Flashboard.xcodeproj \
-          -scheme FlashboardApp \
-          -configuration Release \
-          -destination 'generic/platform=iOS Simulator' \
-          -xcconfig no-sign.xcconfig \
-          -sdk iphonesimulator \
-          CONFIGURATION_BUILD_DIR="$(PWD)/build/simulator"
+          CONFIGURATION_BUILD_DIR="$(PWD)/build/Release-iphoneos"
 
     - name: Ad-Hoc Sign binaries
       run: |
-        # Phone binaries
-        ldid -S "build/iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex/FlashboardKeyboard"
-        ldid -S "build/iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex"
-        ldid -S "build/iphoneos/FlashboardApp.app/FlashboardApp"
-        ldid -S "build/iphoneos/FlashboardApp.app"
+        echo "Fakesigning targets..."
+        # Fakesign both app and extension to avoid "Untrusted Developer" or launch failures
+        ldid -S "build/Release-iphoneos/FlashboardApp.app" || true
+        ldid -S "build/Release-iphoneos/FlashboardKeyboard.appex" || true
 
-    - name: Package Phone IPA
+    - name: Create IPA Payload
       run: |
-        mkdir -p Payload
-        cp -R "build/iphoneos/FlashboardApp.app" Payload/
-        zip -r Flashboard.ipa Payload
-
-    - name: Package Simulator ZIP
-      run: |
-        cd build/simulator
-        zip -r ../../Flashboard-Simulator.zip FlashboardApp.app
+        rm -rf Payload
+        mkdir -p Payload/FlashboardApp.app
+        # Copy the app bundle contents accurately
+        cp -R build/Release-iphoneos/FlashboardApp.app/. Payload/FlashboardApp.app/
+        # Explicitly copy the extension folder into PlugIns for correct IPA structure
+        mkdir -p Payload/FlashboardApp.app/PlugIns
+        cp -R build/Release-iphoneos/FlashboardKeyboard.appex Payload/FlashboardApp.app/PlugIns/
+        zip -r FlashboardKeyboard.ipa Payload
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Flashboard-Builds
         path: |
-          Flashboard.ipa
+          FlashboardKeyboard.ipa
           Flashboard-Simulator.zip
