@@ -27,6 +27,8 @@ class SuggestionEngine {
         return Array(uniqueMatches.prefix(maxSuggestions))
     }
     
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.flash.lanka")
+    
     func recordWord(word: String) {
         let trimmed = word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -39,10 +41,10 @@ class SuggestionEngine {
         if history.count > 100 {
             history = Array(history.prefix(100))
         }
-        UserDefaults.standard.set(history, forKey: "UserWordHistory")
+        sharedDefaults?.set(history, forKey: "UserWordHistory")
     }
     
     private func getUserHistory() -> [String] {
-        return UserDefaults.standard.stringArray(forKey: "UserWordHistory") ?? []
+        return sharedDefaults?.stringArray(forKey: "UserWordHistory") ?? []
     }
 }

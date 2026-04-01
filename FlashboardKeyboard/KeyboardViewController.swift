@@ -118,6 +118,7 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     }
     
     public func didTapClipboard() {
+        clipboardEngine.pullFromSystemClipboard()
         let items = clipboardEngine.getHistory()
         keyboardView.showClipboard(items: items)
     }

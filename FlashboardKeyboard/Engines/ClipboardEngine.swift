@@ -34,8 +34,10 @@ class ClipboardEngine {
         saveHistory(history)
     }
     
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.flash.lanka")
+    
     func getHistory() -> [ClipItem] {
-        guard let data = UserDefaults.standard.data(forKey: historyKey),
+        guard let data = sharedDefaults?.data(forKey: historyKey),
               let items = try? JSONDecoder().decode([ClipItem].self, from: data) else {
             return []
         }
@@ -82,7 +84,7 @@ class ClipboardEngine {
         }
         
         if let data = try? JSONEncoder().encode(history) {
-            UserDefaults.standard.set(data, forKey: historyKey)
+            sharedDefaults?.set(data, forKey: historyKey)
         }
     }
 }

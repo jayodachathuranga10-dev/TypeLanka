@@ -25,13 +25,15 @@ class ThemeManager {
     
     private let themeKey = "TypeLankaActiveThemeID"
     
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.flash.lanka")
+    
     var activeTheme: Theme {
-        let id = UserDefaults.standard.string(forKey: themeKey) ?? "dark"
+        let id = sharedDefaults?.string(forKey: themeKey) ?? "dark"
         return themes.first { $0.id == id } ?? themes[1] // Default to Dark
     }
     
     func setActiveTheme(id: String) {
-        UserDefaults.standard.set(id, forKey: themeKey)
+        sharedDefaults?.set(id, forKey: themeKey)
         NotificationCenter.default.post(name: NSNotification.Name("ThemeDidUpdate"), object: nil)
     }
     
