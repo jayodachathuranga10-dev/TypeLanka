@@ -87,6 +87,9 @@ class KeyboardView: UIView {
         suggestionBar.distribution = .fillEqually
         suggestionBar.spacing = 2
         suggestionBar.isHidden = true
+        suggestionBar.backgroundColor = .clear
+        addSubview(suggestionBar)
+        suggestionBar.translatesAutoresizingMaskIntoConstraints = false
         
         let toolsWrapper = UIStackView(arrangedSubviews: [langBtn, emojiBtn, fontBtn, clipBtn, settingBtn, predictiveToggleButton])
         toolsWrapper.axis = .horizontal
@@ -112,10 +115,17 @@ class KeyboardView: UIView {
             topBarContainer.heightAnchor.constraint(equalToConstant: 44)
         ])
         
+        NSLayoutConstraint.activate([
+            suggestionBar.topAnchor.constraint(equalTo: topBarContainer.bottomAnchor),
+            suggestionBar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            suggestionBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            suggestionBar.heightAnchor.constraint(equalToConstant: 36)
+        ])
+        
         addSubview(keysContainer)
         keysContainer.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            keysContainer.topAnchor.constraint(equalTo: topBarContainer.bottomAnchor),
+            keysContainer.topAnchor.constraint(equalTo: suggestionBar.bottomAnchor),
             keysContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
             keysContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
             keysContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
@@ -293,10 +303,14 @@ class KeyboardView: UIView {
     
     func displaySuggestions(_ words: [String]) {
         suggestionBar.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        suggestionBar.isHidden = words.isEmpty
         for word in words {
             let btn = UIButton(type: .system)
             btn.setTitle(word, for: .normal)
             btn.setTitleColor(ThemeManager.shared.activeTheme.keyTextColor, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 15)
+            btn.layer.cornerRadius = 8
+            btn.backgroundColor = ThemeManager.shared.activeTheme.keyColor.withAlphaComponent(0.6)
             btn.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
             suggestionBar.addArrangedSubview(btn)
         }
