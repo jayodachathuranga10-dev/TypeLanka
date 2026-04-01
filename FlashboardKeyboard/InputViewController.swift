@@ -1,18 +1,11 @@
 import UIKit
 
-// MARK: - THE NUCLEAR BRIDGE (STRICT iOS IDENTITY)
-@objc(KeyboardViewController)
-public class KeyboardViewController: UIInputViewController {
+@objc(InputViewController)
+class InputViewController: UIInputViewController {
     
     // UI Elements
     private var mainStack: UIStackView!
     private var heightConstraint: NSLayoutConstraint!
-    
-    // Typing State
-    private var currentWord = ""
-    private var isSinhalaEnabled = true
-    
-    // MARK: - Lifecycle
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,6 +15,8 @@ public class KeyboardViewController: UIInputViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.setupKeyboardUI()
         }
+        
+        print("KEYBOARD LOADED ✅")
     }
     
     public override func viewDidLayoutSubviews() {
