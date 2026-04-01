@@ -1,6 +1,6 @@
 name: Flashboard
 options:
-  bundleIdPrefix: com.flash
+  {} # Removed bundleIdPrefix to prevent conflicts
 targets:
   FlashboardApp:
     type: application
@@ -40,7 +40,6 @@ targets:
       path: FlashboardKeyboard/Info.plist
       properties:
         CFBundleDisplayName: Flashboard
-        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         NSExtension:
           NSExtensionAttributes:
             IsASCIICapable: false
@@ -48,4 +47,4 @@ targets:
             PrimaryLanguage: en-US
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
-          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"
+          NSExtensionPrincipalClass: "FlashboardKeyboard.KeyboardViewController"
