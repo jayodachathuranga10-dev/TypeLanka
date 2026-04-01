@@ -1,18 +1,18 @@
 name: Flashboard
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.flash
 targets:
   FlashboardApp:
     type: application
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardApp
-    bundleId: com.example.FlashboardApp
+    bundleId: com.flash.lanka
     dependencies:
       - target: FlashboardKeyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlashboardApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka
     info:
       path: FlashboardApp/Info.plist
       properties:
@@ -30,10 +30,10 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
-    bundleId: com.example.FlashboardApp.FlashboardKeyboard
+    bundleId: com.flash.lanka.keyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlashboardApp.FlashboardKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.keyboard
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
@@ -46,4 +46,4 @@ targets:
             PrimaryLanguage: en-US
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
-          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"
+          NSExtensionPrincipalClass: "KeyboardViewController"

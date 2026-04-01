@@ -16,15 +16,6 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        setupKeyboardView()
-    }
-    
-    private func setupKeyboardView() {
-        guard customKeyboardView == nil else { return }
         
         customKeyboardView = KeyboardView()
         customKeyboardView.delegate = self
@@ -41,12 +32,9 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
         
         updateSuggestions()
     }
-
     
     override func textDidChange(_ textInput: UITextInput?) {
         guard customKeyboardView != nil else { return }
-        // We override iOS's light/dark mode if the user sets an explicit theme in our Settings
-        // However, if they have "Auto", we could sync it here.
         customKeyboardView.updateTheme()
         
         if currentWord.isEmpty {
@@ -55,9 +43,9 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
                 customKeyboardView.displaySuggestions(replies)
                 return
             }
-
         }
     }
+
     
     func didTapKey(character: String) {
         currentWord += character
