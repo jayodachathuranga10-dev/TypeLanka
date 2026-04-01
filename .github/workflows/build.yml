@@ -67,11 +67,9 @@ jobs:
       run: |
         cd build/simulator
         zip -r ../../Flashboard-Simulator.zip FlashboardApp.app
-
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Flashboard-Builds
-        path: |
-          Flashboard.ipa
-          Flashboard-Simulator.zip
+        name: Flashboard-Simulator-App
+        path:  Flashboard-Simulator.zip
+        
