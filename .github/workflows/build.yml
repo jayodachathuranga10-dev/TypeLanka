@@ -49,11 +49,8 @@ jobs:
 
     - name: Ad-Hoc Sign with ldid
       run: |
-        echo "Fakesigning the extension binary..."
-        ldid -S "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex/FlashboardKeyboard"
-        
-        echo "Fakesigning the appex bundle..."
-        ldid -S "build/Release-iphoneos/FlashboardApp.app/PlugIns/FlashboardKeyboard.appex"
+        echo "Fakesigning the extension binaries recursively..."
+        find "build/Release-iphoneos/FlashboardApp.app/PlugIns" -type f -exec ldid -S {} +
         
         echo "Fakesigning the main app..."
         ldid -S "build/Release-iphoneos/FlashboardApp.app"

@@ -1,5 +1,6 @@
 import UIKit
 
+@objc(KeyboardViewController)
 class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     var customKeyboardView: KeyboardView!
@@ -15,6 +16,15 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setupKeyboardView()
+    }
+    
+    private func setupKeyboardView() {
+        guard customKeyboardView == nil else { return }
         
         customKeyboardView = KeyboardView()
         customKeyboardView.delegate = self
@@ -30,8 +40,8 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
         ])
         
         updateSuggestions()
-
     }
+
     
     override func textDidChange(_ textInput: UITextInput?) {
         guard customKeyboardView != nil else { return }
