@@ -7,12 +7,12 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardApp
-    bundleId: com.flash.lanka.v3
+    bundleId: com.flash.lanka.v4
     dependencies:
       - target: FlashboardKeyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v3
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v4
     info:
       path: FlashboardApp/Info.plist
       properties:
@@ -30,10 +30,10 @@ targets:
     platform: iOS
     deploymentTarget: "15.0"
     sources: FlashboardKeyboard
-    bundleId: com.flash.lanka.v3.keyboard
+    bundleId: com.flash.lanka.v4.keyboard
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v3.keyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v4.keyboard
     info:
       path: FlashboardKeyboard/Info.plist
       properties:
