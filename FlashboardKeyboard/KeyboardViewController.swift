@@ -33,6 +33,7 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     }
     
     override func textDidChange(_ textInput: UITextInput?) {
+        guard customKeyboardView != nil else { return }
         // We override iOS's light/dark mode if the user sets an explicit theme in our Settings
         // However, if they have "Auto", we could sync it here.
         customKeyboardView.updateTheme()
