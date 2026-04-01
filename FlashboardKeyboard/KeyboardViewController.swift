@@ -4,10 +4,10 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     var customKeyboardView: KeyboardView!
     
-    let transliterationEngine = TransliterationEngine()
-    let suggestionEngine = SuggestionEngine()
-    let smartReplyEngine = SmartReplyEngine()
-    let clipboardEngine = ClipboardEngine()
+    lazy var transliterationEngine = TransliterationEngine()
+    lazy var suggestionEngine = SuggestionEngine()
+    lazy var smartReplyEngine = SmartReplyEngine()
+    lazy var clipboardEngine = ClipboardEngine()
     
     var isSinhalaMode = true
     var currentWord = ""
@@ -25,7 +25,8 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
             customKeyboardView.leftAnchor.constraint(equalTo: view.leftAnchor),
             customKeyboardView.rightAnchor.constraint(equalTo: view.rightAnchor),
             customKeyboardView.topAnchor.constraint(equalTo: view.topAnchor),
-            customKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            customKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            view.heightAnchor.constraint(equalToConstant: 250).withPriority(.defaultHigh)
         ])
         
         updateSuggestions()
@@ -152,5 +153,11 @@ class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
         } else {
             customKeyboardView.displaySuggestions([])
         }
+    }
+}
+extension NSLayoutConstraint {
+    func withPriority(_ priority: UILayoutPriority) -> NSLayoutConstraint {
+        self.priority = priority
+        return self
     }
 }

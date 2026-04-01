@@ -356,11 +356,6 @@ class KeyboardView: UIView {
                 btn.backgroundColor = ThemeManager.shared.activeTheme.keyColor
                 btn.setTitleColor(ThemeManager.shared.activeTheme.keyTextColor, for: .normal)
                 
-                // Shadow & modern inner border simulation
-                btn.layer.shadowColor = ThemeManager.shared.activeTheme.keyShadowColor.cgColor
-                btn.layer.shadowOffset = CGSize(width: 0, height: 1)
-                btn.layer.shadowOpacity = 1.0
-                btn.layer.shadowRadius = 0
                 btn.layer.borderColor = ThemeManager.shared.activeTheme.keyInnerBorderColor.cgColor
                 btn.layer.borderWidth = 0.5
                 
