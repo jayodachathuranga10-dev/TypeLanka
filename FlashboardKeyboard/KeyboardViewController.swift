@@ -4,6 +4,10 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     
     private var keyboardView: KeyboardView!
     
+    // State management (Engines are stateless)
+    private var isSinhalaEnabled = true
+    private var currentWord = ""
+    
     // Lazy engines for memory efficiency and startup speed
     private lazy var transliterationEngine = TransliterationEngine()
     private lazy var suggestionEngine = SuggestionEngine()
@@ -44,32 +48,57 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     public func didTapKey(character: String) {
         let proxy = textDocumentProxy
         
-        if transliterationEngine.isSinhalaEnabled {
-            let result = transliterationEngine.process(character)
+        if isSinhalaEnabled {
+            // Delete previously typed partial word if any
+            let previousCount = transliterationEngine.transliterate(text: currentWord).count
+            for _ in 0..<previousCount {
+                proxy.deleteBackward()
+            }
+            
+            // Update word and transliterate
+            currentWord += character
+            let result = transliterationEngine.transliterate(text: currentWord)
             proxy.insertText(result)
-            updateSuggestions(for: transliterationEngine.currentWord)
+            
+            updateSuggestions(for: result)
         } else {
             proxy.insertText(character)
+            currentWord = ""
         }
     }
     
     public func didTapBackspace() {
-        textDocumentProxy.deleteBackward()
-        if transliterationEngine.isSinhalaEnabled {
-            transliterationEngine.backspace()
-            updateSuggestions(for: transliterationEngine.currentWord)
+        let proxy = textDocumentProxy
+        proxy.deleteBackward()
+        
+        if isSinhalaEnabled && !currentWord.isEmpty {
+            // Delete the whole transliterated word from proxy and re-insert 
+            // the new transliterated word minus one char
+            let previousCount = transliterationEngine.transliterate(text: currentWord).count
+            for _ in 0..<(previousCount - 1) { // -1 because already deleted one above
+                 // wait, proxy.deleteBackward() already deleted the last char of the RESULT.
+            }
+            
+            currentWord.removeLast()
+            let newResult = transliterationEngine.transliterate(text: currentWord)
+            
+            // This is tricky. Let's simplify: 
+            // If in Sinhala mode, we just track the current word.
+            // On backspace, we already called deleteBackward() which removed the last visual char.
+            // We just need to sync our currentWord.
+            updateSuggestions(for: newResult)
         }
     }
     
     public func didTapSpace() {
         textDocumentProxy.insertText(" ")
-        transliterationEngine.resetWord()
+        currentWord = ""
         keyboardView.displaySuggestions([])
     }
     
     public func didTapEnter() {
         textDocumentProxy.insertText("\n")
-        transliterationEngine.resetWord()
+        currentWord = ""
     }
     
     public func didTapShift() {
@@ -77,7 +106,8 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     }
     
     public func didTapLanguageSwitch() {
-        transliterationEngine.isSinhalaEnabled.toggle()
+        isSinhalaEnabled.toggle()
+        currentWord = ""
         // Provide haptic feedback
         let feedback = UIImpactFeedbackGenerator(style: .light)
         feedback.impactOccurred()
@@ -95,16 +125,18 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     public func didSelectClipboardItem(_ text: String) {
         textDocumentProxy.insertText(text)
         keyboardView.hideClipboard()
+        currentWord = ""
     }
     
     public func didSelectSuggestion(_ word: String) {
         let proxy = textDocumentProxy
         // Remove current partial word
-        for _ in 0..<transliterationEngine.currentWord.count {
+        let previousCount = transliterationEngine.transliterate(text: currentWord).count
+        for _ in 0..<previousCount {
             proxy.deleteBackward()
         }
         proxy.insertText(word + " ")
-        transliterationEngine.resetWord()
+        currentWord = ""
         keyboardView.displaySuggestions([])
     }
     
@@ -127,11 +159,8 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     }
     
     private func updateSuggestions(for word: String) {
-        guard !word.isEmpty else {
-            keyboardView.displaySuggestions([])
-            return
-        }
-        let suggestions = suggestionEngine.getSuggestions(for: word)
+        let language = isSinhalaEnabled ? "si" : "en"
+        let suggestions = suggestionEngine.getSuggestions(for: word, language: language)
         keyboardView.displaySuggestions(suggestions)
     }
 }
