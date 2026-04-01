@@ -47,4 +47,9 @@ targets:
             PrimaryLanguage: en-US
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
-          NSExtensionPrincipalClass: "FlashboardKeyboard.KeyboardViewController"
+          NSExtensionPrincipalClass: "KeyboardViewController"
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.flash.lanka.v5.keyboard
+        CODE_SIGN_ENTITLEMENTS: FlashboardKeyboard/FlashboardKeyboard.entitlements
+        ENABLE_BITCODE: NO
+        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES

@@ -1,5 +1,6 @@
 import UIKit
 
+@objc(KeyboardViewController)
 public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate {
     
     private var keyboardView: KeyboardView!
@@ -18,8 +19,8 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     public override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Use a small delay to ensure the system is ready for our UI
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        // Use a 0.2s delay for physical hardware stability
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.setupKeyboardView()
         }
     }
